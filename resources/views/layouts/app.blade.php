@@ -5,11 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Dot.Billing</title>
+    <!-- TODO(branding): dot.billing placeholder favicon — swap in the real ecosystem-issued logo/favicon when it exists. -->
+    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>tailwind.config = { corePlugins: { preflight: false } }</script>
+    <script>tailwind.config = { darkMode: 'class', corePlugins: { preflight: false } }</script>
+    <script>
+        // Dark mode: this dashboard's own markup is intentionally fixed-dark (inline styles,
+        // not Tailwind dark: classes), so this toggle mainly affects Jetstream-rendered pages
+        // (Profile, Team Settings) which do use dark: classes. Kept for theme consistency
+        // ecosystem-wide and so those subpages respect the user's light/dark preference.
+        (function () {
+            const stored = localStorage.getItem('dot-theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (stored === 'dark' || (!stored && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
     <style>
         :root { --accent: #818cf8; --accent-rgb: 129,140,248; }
         *, *::before, *::after { box-sizing: border-box; }
@@ -60,6 +75,9 @@
         .dot-badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:100px; font-size:11px; font-weight:600; }
         .dot-badge-accent { background:rgba(129,140,248,0.12); color:#818cf8; }
         select.dot-input option { background:#1a1a1f; }
+        .dot-loading-overlay { display:flex; align-items:center; justify-content:center; padding:2.5rem 0; }
+        .dot-spin { animation: dot-spin 0.9s linear infinite; }
+        @keyframes dot-spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
     </style>
     @livewireStyles
     <script defer src="https://unpkg.com/alpinejs@3.10.2/dist/cdn.min.js"></script>
@@ -69,8 +87,12 @@
 
     <aside class="sidebar">
         <div class="sidebar-brand">
+            <!-- TODO(branding): placeholder Dot.Billing mark — replace with the official ecosystem-issued logo once one exists (see wiki.md §8 roadmap). -->
             <div class="brand-icon">
-                <span class="material-symbols-rounded">receipt_long</span>
+                <svg width="20" height="20" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="24" cy="24" r="24" fill="#818cf8"/>
+                    <text x="24" y="32" font-family="Georgia, 'Times New Roman', serif" font-size="24" font-weight="700" fill="#09090b" text-anchor="middle">B</text>
+                </svg>
             </div>
             <div>
                 <div class="brand-name">Dot.Billing</div>
@@ -117,7 +139,16 @@
         </div>
         @auth
         <span class="topbar-team">{{ Auth::user()->currentTeam->name ?? 'Personal' }}</span>
+        <livewire:notification-bell />
         @endauth
+        <button
+            type="button"
+            onclick="document.documentElement.classList.toggle('dark'); localStorage.setItem('dot-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');"
+            class="topbar-btn"
+            title="Toggle dark mode"
+        >
+            <span class="material-symbols-rounded">dark_mode</span>
+        </button>
         <a href="{{ route('profile.show') }}" class="topbar-btn" title="Profile">
             <span class="material-symbols-rounded">account_circle</span>
         </a>

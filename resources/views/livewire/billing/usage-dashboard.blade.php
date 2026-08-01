@@ -16,6 +16,10 @@
     </div>
     @endif
 
+    <div wire:loading.delay wire:target="analyzeSpend" class="dot-loading-overlay">
+        <span class="material-symbols-rounded dot-spin" style="font-size:22px;color:#818cf8;">progress_activity</span>
+    </div>
+
     @if(empty($this->usageByPlatform))
         <div style="text-align:center;padding:2rem 0;">
             <span class="material-symbols-rounded" style="font-size:36px;color:#3f3f46;display:block;margin-bottom:0.75rem;">bar_chart</span>

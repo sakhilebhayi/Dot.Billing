@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\EcosystemAuthController;
+use App\Http\Controllers\Billing\InvoiceController;
 use App\Models\BillingAlert;
 use App\Models\BillingInvoice;
 use App\Models\BillingSubscription;
@@ -27,4 +28,6 @@ Route::middleware([
             'activeAlerts' => BillingAlert::where('team_id', $team->id)->where('status', 'active')->count(),
         ]);
     })->name('dashboard');
+
+    Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
 });
