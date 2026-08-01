@@ -1,6 +1,6 @@
 ---
 title: Dot.Billing — Platform Wiki
-version: 0.3.0
+version: 0.3.1
 status: draft
 owners: [Billing Platform Lead]
 platform-id: dot-billing
@@ -111,11 +111,10 @@ Given the sensitivity of money-movement data, any aggregation published outward 
 - [ ] Define and implement the actual PCI/compliance posture rather than inferring one from field names
 - [ ] Decide whether `AiBillingService`'s direct-cURL Claude integration should move to a shared ecosystem AI client, if/when one exists
 - [ ] Aggregation-floor enforcement before any outward-facing Knowledge Pack publishing begins
-- [ ] Swap the placeholder Dot.Billing logo/favicon (circle + "B" monogram, added in the UI/branding pass below) for the real ecosystem-issued mark once one is designed — see `TODO(branding)` comments in `resources/views/layouts/app.blade.php`, `resources/views/layouts/guest.blade.php`, `resources/views/components/application-mark.blade.php`, `resources/views/components/authentication-card-logo.blade.php`, and `public/favicon.svg`
-
 ## Change Log
 
 | Version | Date | Author | Change |
 |---|---|---|---|
+| 0.3.1 | 2026-08-01 | Billing Platform Lead | Swapped the placeholder monogram for the real ecosystem-issued Dot.Billing logo (`Dot.logos/dot.billing.png`) across favicon, nav mark, and login page; removed the stale `public/dot_projects.png` leftover from the shared template |
 | 0.3.0 | 2026-08-01 | Billing Platform Lead | UI/branding pass: invoice detail page + search, Livewire loading/empty states, database-channel notification bell, class-based dark mode toggle, placeholder logo/favicon, `BillingInvoicePolicy` security fix, and Feature tests — see README and inline `TODO(branding)` comments for details |
 | 0.2.0 | 2026-08-01 | Billing Platform Lead | Initial platform-owned wiki, derived from the actual Laravel codebase (models, migrations, routes, services) plus Dot.Brain's ingested view for ecosystem framing; explicitly flags the gap between Dot.Brain's target-state description and current implementation |
