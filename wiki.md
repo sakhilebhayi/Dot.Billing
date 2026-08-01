@@ -1,6 +1,6 @@
 ---
 title: Dot.Billing — Platform Wiki
-version: 0.3.1
+version: 0.3.2
 status: draft
 owners: [Billing Platform Lead]
 platform-id: dot-billing
@@ -30,7 +30,7 @@ Dot.Billing is the subscription and billing management application for the InfoD
 | Database | PostgreSQL 16 | Shared instance across the InfoDot ecosystem (`DB_DATABASE=infodot`) |
 | Auth | Laravel Sanctum + a custom `EcosystemAuthController` | SSO handoff from the InfoDot hub (`/auth/ecosystem`) |
 | Realtime | Laravel Reverb | Configured (env vars present) but not wired to any billing broadcast yet |
-| AI | Anthropic Claude, via `App\Services\AiBillingService` | Direct cURL call to the Messages API; falls back to canned copy if `ANTHROPIC_API_KEY` is unset |
+| AI | Anthropic Claude, via `App\Services\AiBillingService` | Direct cURL call to the Messages API, with a 5s connect / 15s total timeout; falls back to canned copy if `ANTHROPIC_API_KEY` is unset or the live call fails |
 | Payments | Stripe identifiers only (`stripe_subscription_id`, `stripe_invoice_id`, `stripe_payment_id`, `stripe_pm_id`) | No Stripe SDK, webhook endpoint, or charge-creation code exists in this repo yet — these are foreign-key style references for a Stripe integration that is not yet implemented here |
 
 Team/user scoping runs through Jetstream's `Team` model (multi-tenant by team, not by individual user). Everything billing-related is scoped by `team_id`.
@@ -115,6 +115,7 @@ Given the sensitivity of money-movement data, any aggregation published outward 
 
 | Version | Date | Author | Change |
 |---|---|---|---|
+| 0.3.2 | 2026-08-01 | Billing Platform Lead | Incremental pass: fixed a config-key mismatch in `AiBillingService` — it read `services.anthropic.key`, but `config/services.php` only ever defined `services.anthropic.api_key`, so the API key was always empty and the "live AI insights" path was silently dead code regardless of `ANTHROPIC_API_KEY` being set. Also added explicit cURL connect/total timeouts (5s/15s) so a slow or unreachable Anthropic API can't hang the request, and made a failed live call fall back to the same honest canned copy used for the no-key case instead of an empty insights array. Added `tests/Feature/Billing/AiBillingServiceTest.php` (written but unexecuted — see [Dot.Brain 02-Engineering-Loop.md](../Dot.Brain/os/02-Engineering-Loop.md) §2 on this environment's constraints). |
 | 0.3.1 | 2026-08-01 | Billing Platform Lead | Swapped the placeholder monogram for the real ecosystem-issued Dot.Billing logo (`Dot.logos/dot.billing.png`) across favicon, nav mark, and login page; removed the stale `public/dot_projects.png` leftover from the shared template |
 | 0.3.0 | 2026-08-01 | Billing Platform Lead | UI/branding pass: invoice detail page + search, Livewire loading/empty states, database-channel notification bell, class-based dark mode toggle, placeholder logo/favicon, `BillingInvoicePolicy` security fix, and Feature tests — see README and inline `TODO(branding)` comments for details |
 | 0.2.0 | 2026-08-01 | Billing Platform Lead | Initial platform-owned wiki, derived from the actual Laravel codebase (models, migrations, routes, services) plus Dot.Brain's ingested view for ecosystem framing; explicitly flags the gap between Dot.Brain's target-state description and current implementation |
