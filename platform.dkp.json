@@ -1,0 +1,23 @@
+{
+  "platform": "dot-billing",
+  "display_name": "Dot.Billing",
+  "dkp_version": "1.0.0",
+  "endpoints": {
+    "publish_topic": "dkp.dot-billing.publish",
+    "response_topic": "dkp.dot-billing.response",
+    "pr_repository": "sakhilebhayi/Dot.Billing"
+  },
+  "keys": [
+    {
+      "key_id": "dot-billing-dkp-signing-v1",
+      "algorithm": "ed25519",
+      "public_key": "Rj/OtMvLAxqvQTfdOKCXgwPQzOCxPpnHMOLIz+vfxK0=",
+      "valid_from": "2026-08-02T00:00:00Z"
+    }
+  ],
+  "advisory_subscriptions": ["security", "reliability", "business"],
+  "rate_limit_per_minute": 100,
+  "contacts": [
+    { "role": "Platform Lead", "handle": "sakhilebhayi" }
+  ]
+}

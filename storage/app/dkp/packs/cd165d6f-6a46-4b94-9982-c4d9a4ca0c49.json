@@ -1,0 +1,59 @@
+{
+  "dkp_version": "1.0.0",
+  "pack_id": "dkp:dot-billing:cd165d6f-6a46-4b94-9982-c4d9a4ca0c49",
+  "pack_version": "1.0.0",
+  "platform": "dot-billing",
+  "title": "Invoice payment success rate — definition and current observations",
+  "summary": "The exact computation rule for billing.invoice_payment_success_rate, plus whatever real observations exist in this database at publish time. This is Dot.Billing's first published Knowledge Pack — see body.observations for what is actually measured versus definitional.",
+  "created_at": "2026-08-02T00:00:00Z",
+  "contributors": [
+    {
+      "id": "sakhilemaxwell@gmail.com",
+      "kind": "human",
+      "display_name": "Sakhile Bhayi",
+      "key_id": "dot-billing-dkp-signing-v1"
+    }
+  ],
+  "payloads": [
+    {
+      "payload_type": "metric",
+      "body": {
+        "metric_name": "billing.invoice_payment_success_rate",
+        "domain": "payments",
+        "definition": "Invoices with status=paid and paid_at <= due_date, divided by all invoices with due_date in the same calendar month, computed monthly.",
+        "unit": "ratio",
+        "direction_of_good": "up",
+        "dimensions": [
+          "currency"
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "sources": [
+      {
+        "kind": "system",
+        "uri": "dot-billing://billing_invoices",
+        "observed_at": "2026-08-02T00:00:00Z"
+      }
+    ],
+    "transformations": [
+      {
+        "step": "aggregate-invoice-payment-success-rate",
+        "tool": "App\\Console\\Commands\\PublishDkpMetricPack",
+        "tool_version": "1.0.0",
+        "actor": "dot-billing"
+      }
+    ],
+    "published_by": "dot-billing"
+  },
+  "confidence": 0.3,
+  "signatures": [
+    {
+      "key_id": "dot-billing-dkp-signing-v1",
+      "algorithm": "ed25519-jcs",
+      "signed_at": "2026-08-02T00:00:00Z",
+      "value": "WG38oGMon3/F/6MGw+E8gnOTgG0YnbFwhlJyeJuAe+qMAXgkqmgt6dGSTZs6vTOlQS3v0GYRGy8gW7J84dVpBQ=="
+    }
+  ]
+}
