@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/logo.svg" alt="Dot.Billing" width="320" />
+<img src="public/images/logo.png" alt="Dot.Billing" width="320" />
 
 <br /><br />
 
