@@ -8,21 +8,30 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     *
+     * Guarded per column: see Dot.Brain adr/ADR-0013 — another Dot platform
+     * may have already added these columns to the shared `users` table.
      */
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->text('two_factor_secret')
-                ->after('password')
-                ->nullable();
+            if (! Schema::hasColumn('users', 'two_factor_secret')) {
+                $table->text('two_factor_secret')
+                    ->after('password')
+                    ->nullable();
+            }
 
-            $table->text('two_factor_recovery_codes')
-                ->after('two_factor_secret')
-                ->nullable();
+            if (! Schema::hasColumn('users', 'two_factor_recovery_codes')) {
+                $table->text('two_factor_recovery_codes')
+                    ->after('two_factor_secret')
+                    ->nullable();
+            }
 
-            $table->timestamp('two_factor_confirmed_at')
-                ->after('two_factor_recovery_codes')
-                ->nullable();
+            if (! Schema::hasColumn('users', 'two_factor_confirmed_at')) {
+                $table->timestamp('two_factor_confirmed_at')
+                    ->after('two_factor_recovery_codes')
+                    ->nullable();
+            }
         });
     }
 

@@ -1,6 +1,6 @@
 ---
 title: Dot.Billing — Platform Wiki
-version: 0.4.0
+version: 0.5.0
 status: draft
 owners: [Billing Platform Lead]
 platform-id: dot-billing
@@ -126,6 +126,7 @@ Given the sensitivity of money-movement data, any aggregation published outward 
 
 | Version | Date | Author | Change |
 |---|---|---|---|
+| 0.5.0 | 2026-08-02 | Sakhile Bhayi | **Shared-`infodot`-database migration collision fixed** (Dot.Brain ADR-0013): every platform ships its own copy of the six Jetstream-core migrations (users/teams/team_user/team_invitations/personal_access_tokens/two-factor columns), and running two platforms' migrations against the same real `infodot` database was found to collide — Dot.Forms' migration failed on a column Dot.Billing's had already added. Guarded this platform's six copies with `Schema::hasTable`/`hasColumn` checks so they're safe regardless of run order. Verified for real: reset `infodot`, ran Dot.Billing → Dot.Forms → Dot.Tutor's full migration sets back-to-back against the same database, zero errors, no duplicate columns; each platform's test suite still passes unchanged. |
 | 0.4.0 | 2026-08-02 | Billing Platform Lead | **DKP onboarding step 1, done for real** (§7): generated a real Ed25519 keypair (public half committed at `platform.dkp.json`, private half gitignored at `storage/app/private/dkp-signing.key`); wrote the manifest, validated by hand against Dot.Brain's `schemas/platform-manifest.schema.json`; wrote `app/Console/Commands/PublishDkpMetricPack.php`, the one hand-run publish script for `billing.invoice_payment_success_rate`; produced and committed one real signed pack at `storage/app/dkp/packs/` — signature verified against the committed public key, `observations` honestly empty since this environment's database has no invoice rows. This is Dot.Billing's (and the ecosystem's) first real, verifiable DKP artifact — see Dot.Brain `os/05-Knowledge-Protocol.md` §5 and `os/19-Knowledge-Packs.md` §5 for why this was scoped this narrowly. |
 | 0.3.2 | 2026-08-01 | Billing Platform Lead | Incremental pass: fixed a config-key mismatch in `AiBillingService` — it read `services.anthropic.key`, but `config/services.php` only ever defined `services.anthropic.api_key`, so the API key was always empty and the "live AI insights" path was silently dead code regardless of `ANTHROPIC_API_KEY` being set. Also added explicit cURL connect/total timeouts (5s/15s) so a slow or unreachable Anthropic API can't hang the request, and made a failed live call fall back to the same honest canned copy used for the no-key case instead of an empty insights array. Added `tests/Feature/Billing/AiBillingServiceTest.php` (written but unexecuted — see [Dot.Brain 02-Engineering-Loop.md](../Dot.Brain/os/02-Engineering-Loop.md) §2 on this environment's constraints). |
 | 0.3.1 | 2026-08-01 | Billing Platform Lead | Swapped the placeholder monogram for the real ecosystem-issued Dot.Billing logo (`Dot.logos/dot.billing.png`) across favicon, nav mark, and login page; removed the stale `public/dot_projects.png` leftover from the shared template |
