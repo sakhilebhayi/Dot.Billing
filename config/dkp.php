@@ -14,9 +14,9 @@ return [
     |
     */
 
-    'signing_key_path' => env('DKP_SIGNING_KEY_PATH', storage_path('app/private/dkp-signing.key')),
+    'signing_key_path' => env('DKP_SIGNING_KEY_PATH') ?: storage_path('app/private/dkp-signing.key'),
 
-    'key_id' => env('DKP_KEY_ID', 'dot-billing-dkp-signing-v1'),
+    'key_id' => env('DKP_KEY_ID') ?: 'dot-billing-dkp-signing-v1',
 
     'platform' => 'dot-billing',
 
