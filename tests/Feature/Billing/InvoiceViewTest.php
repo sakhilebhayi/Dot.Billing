@@ -58,9 +58,16 @@ class InvoiceViewTest extends TestCase
             'total'          => 500,
         ]);
 
+        // As of BillingInvoice's HasTeamScope global scope, cross-team access
+        // 404s rather than 403ing: implicit route-model binding queries
+        // through the scope too, so another team's invoice is invisible
+        // before BillingInvoicePolicy ever runs. This is intentionally a
+        // stronger, fail-closed posture than the old assertForbidden()
+        // behavior -- it no longer depends on InvoiceController@show
+        // remembering to call Gate::authorize().
         $this->actingAs($user)
             ->get(route('invoices.show', $invoice))
-            ->assertForbidden();
+            ->assertNotFound();
     }
 
     public function test_invoice_search_filters_by_invoice_number(): void
@@ -82,5 +89,38 @@ class InvoiceViewTest extends TestCase
         ]);
 
         $this->actingAs($user)->get('/dashboard')->assertOk()->assertSee('INV-200')->assertSee('INV-999');
+    }
+
+    /**
+     * Proves HasTeamScope itself is load-bearing, independent of any Policy
+     * or controller check: querying BillingInvoice directly as a member of
+     * another team, with no Gate::authorize() anywhere in the path, still
+     * cannot see the row. This is the property that makes the scope
+     * "defense in depth" rather than decorative -- it holds even if a
+     * future route or Livewire component forgets to check authorization
+     * entirely.
+     */
+    public function test_scope_alone_blocks_cross_team_access_even_without_a_policy_check(): void
+    {
+        $owner    = User::factory()->withPersonalTeam()->create();
+        $ownTeam  = $owner->currentTeam;
+        $attacker = User::factory()->withPersonalTeam()->create();
+
+        $invoice = BillingInvoice::create([
+            'team_id'        => $ownTeam->id,
+            'invoice_number' => 'INV-300',
+            'status'         => 'open',
+            'total'          => 750,
+        ]);
+
+        $this->actingAs($attacker);
+
+        $this->assertNull(BillingInvoice::find($invoice->id));
+        $this->assertSame(0, BillingInvoice::query()->count());
+
+        $this->actingAs($owner);
+
+        $this->assertNotNull(BillingInvoice::find($invoice->id));
+        $this->assertSame(1, BillingInvoice::query()->count());
     }
 }

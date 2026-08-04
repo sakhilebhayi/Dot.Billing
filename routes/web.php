@@ -18,14 +18,14 @@ Route::middleware([
     'verified',
 ])->group(function () {
     Route::get('/dashboard', function () {
-        $team         = auth()->user()->currentTeam;
-        $subscription = BillingSubscription::where('team_id', $team->id)->with('plan')->first();
+        // team scoping now comes from each model's HasTeamScope global scope
+        $subscription = BillingSubscription::with('plan')->first();
 
         return view('dashboard', [
             'planName'     => $subscription?->plan?->name ?? 'No Plan',
-            'openInvoices' => BillingInvoice::where('team_id', $team->id)->where('status', 'open')->count(),
-            'totalPaidYtd' => BillingInvoice::where('team_id', $team->id)->where('status', 'paid')->whereYear('paid_at', now()->year)->sum('total'),
-            'activeAlerts' => BillingAlert::where('team_id', $team->id)->where('status', 'active')->count(),
+            'openInvoices' => BillingInvoice::where('status', 'open')->count(),
+            'totalPaidYtd' => BillingInvoice::where('status', 'paid')->whereYear('paid_at', now()->year)->sum('total'),
+            'activeAlerts' => BillingAlert::where('status', 'active')->count(),
         ]);
     })->name('dashboard');
 

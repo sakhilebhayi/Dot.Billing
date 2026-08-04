@@ -18,8 +18,8 @@ class BillingOverview extends Component
     #[Computed]
     public function nextInvoice(): ?BillingInvoice
     {
-        return BillingInvoice::where('team_id', auth()->user()->currentTeam->id)
-            ->where('status', 'open')
+        // team scoping now comes from BillingInvoice's HasTeamScope global scope
+        return BillingInvoice::where('status', 'open')
             ->orderBy('due_date')
             ->first();
     }

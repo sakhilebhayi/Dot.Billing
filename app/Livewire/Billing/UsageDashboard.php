@@ -15,8 +15,8 @@ class UsageDashboard extends Component
     #[Computed]
     public function usageByPlatform(): array
     {
-        $teamId = auth()->user()->currentTeam->id;
-        return BillingUsageRecord::where('team_id', $teamId)
+        // team scoping now comes from BillingUsageRecord's HasTeamScope global scope
+        return BillingUsageRecord::query()
             ->selectRaw('platform, metric, SUM(quantity) as total')
             ->groupBy('platform', 'metric')
             ->get()
