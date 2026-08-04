@@ -129,6 +129,24 @@ class BillingTest extends TestCase
         $this->assertCount(1, $this->team->invoices);
     }
 
+    public function test_authenticated_user_with_no_team_is_redirected_to_team_creation(): void
+    {
+        // A user with no current team (e.g. removed from their last team, or
+        // never assigned one) has a genuinely null Auth::user()->currentTeam
+        // here: there is no EnsureTeamContext-style middleware in this app
+        // that forces a team to exist before /dashboard renders. Regression
+        // test for BillingOverview/UsageDashboard's mount() null-team guard.
+        $user = User::factory()->create(['current_team_id' => null]);
+
+        $response = $this->actingAs($user)->get('/dashboard');
+
+        // BillingOverview::mount() (and UsageDashboard::mount()) abort the
+        // whole request with a redirect via Livewire's SupportRedirects,
+        // even though they're nested components rendered inside the
+        // /dashboard route closure's response, not the route itself.
+        $response->assertRedirect(route('teams.create'));
+    }
+
     public function test_dashboard_returns_correct_counts(): void
     {
         BillingInvoice::create([
