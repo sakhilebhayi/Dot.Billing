@@ -135,7 +135,14 @@
 
         <!-- Hero -->
         <section class="relative overflow-hidden pt-32 sm:pt-36">
-            <div class="relative max-w-[1400px] mx-auto px-5 sm:px-8 pb-16 sm:pb-20 grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] gap-12 lg:gap-8 items-center">
+            <div class="relative overflow-hidden">
+                <!-- Photo: an antique accounting ledger, handwritten entries, quill and inkwell, by Magic Fan, unsplash.com/photos/CA4QegCOiDQ -->
+                <!-- Desktop-only (lg+): a light-theme photo backdrop needs a wide two-column layout to keep text on a near-solid paper zone; see wiki 0.8.1 for the computed contrast this relies on. -->
+                <div class="hidden lg:block absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1780246033063-b058393796a0?q=80&amp;w=2400&amp;auto=format&amp;fit=crop');"></div>
+                <div class="hidden lg:block absolute inset-0" style="background: linear-gradient(90deg, var(--paper) 0%, rgba(250,246,236,0.97) 42%, rgba(250,246,236,0.85) 55%, rgba(250,246,236,0.45) 72%, rgba(250,246,236,0.12) 92%, rgba(250,246,236,0.04) 100%);"></div>
+                <div class="hidden lg:block absolute inset-0" style="background: linear-gradient(180deg, rgba(250,246,236,0.7) 0%, rgba(250,246,236,0.3) 42%, rgba(250,246,236,0.55) 75%, var(--paper) 100%);"></div>
+
+                <div class="relative z-10 max-w-[1400px] mx-auto px-5 sm:px-8 pb-16 sm:pb-20 grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] gap-12 lg:gap-8 items-center">
                 <div class="reveal" data-reveal>
                     <p class="font-mono text-xs tracking-[0.18em] uppercase text-[var(--gold)] mb-6">
                         Billing for the Dot Ecosystem
@@ -183,6 +190,7 @@
                         <!-- chevron, echoing the logo's green arrow -->
                         <path d="M298 150L328 190L298 230" stroke="var(--green-bright)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
                     </svg>
+                </div>
                 </div>
             </div>
 
