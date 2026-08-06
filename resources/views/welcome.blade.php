@@ -332,6 +332,11 @@
                 <a href="/" class="flex items-center">
                     <img src="{{ asset('images/logo.png') }}" alt="Dot.Billing" class="h-11 w-auto opacity-90">
                 </a>
+                <div class="flex items-center gap-6 font-mono text-xs tracking-wide uppercase text-[var(--ink-soft)]">
+                    <a href="{{ route('policy.show') }}" class="hover:text-[var(--ink)] transition-colors">Privacy</a>
+                    <a href="{{ route('cookies') }}" class="hover:text-[var(--ink)] transition-colors">Cookies</a>
+                    <a href="{{ route('terms.show') }}" class="hover:text-[var(--ink)] transition-colors">Terms</a>
+                </div>
                 <p class="font-mono text-xs tracking-wide text-[var(--ink-soft)]">
                     &copy; {{ date('Y') }} Dot.Billing. Billing for the Dot Ecosystem.
                 </p>

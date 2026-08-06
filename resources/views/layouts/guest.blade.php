@@ -47,12 +47,21 @@
         </style>
     </head>
     <body class="antialiased">
-        <div class="min-h-screen flex flex-col items-center pt-10 pb-6 px-4">
-            <div class="mb-6">
+        <div class="relative min-h-screen flex flex-col items-center pt-10 pb-6 px-4 overflow-hidden">
+            {{-- Same hero photo as welcome.blade.php (antique accounting ledger, Magic Fan),
+            desktop-only per the welcome hero's own note (0.8.1): a light-theme photo backdrop
+            needs a wide safe zone to keep text legible, so this stays hidden below lg and sits
+            behind a near-solid paper gradient rather than a full-strength scrim. --}}
+            <div class="hidden lg:block absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1780246033063-b058393796a0?q=80&w=2400&auto=format&fit=crop');"></div>
+            <div class="hidden lg:block absolute inset-0" style="background: radial-gradient(ellipse 70% 65% at 50% 35%, var(--paper) 0%, rgba(250,246,236,0.94) 45%, rgba(250,246,236,0.7) 72%, rgba(250,246,236,0.35) 100%);"></div>
+
+            <div class="relative z-10 mb-6">
                 <x-authentication-card-logo />
             </div>
 
-            {{ $slot }}
+            <div class="relative z-10 w-full flex flex-col items-center">
+                {{ $slot }}
+            </div>
         </div>
 
         @livewireScripts
