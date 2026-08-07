@@ -33,7 +33,7 @@ return [
         'forms' => ['name' => 'Dot.Forms', 'url' => env('DOT_FORMS_URL', 'https://forms.infodot.app'), 'icon' => 'dynamic_form', 'accent' => '#f1c62e', 'active' => true],
         'hr' => ['name' => 'Dot.HR', 'url' => env('DOT_HR_URL', 'https://hr.infodot.app'), 'icon' => 'badge', 'accent' => '#f0b91c', 'active' => true],
         'memory' => ['name' => 'Dot.Memory', 'url' => env('DOT_MEMORY_URL', 'https://memory.infodot.app'), 'icon' => 'memory', 'accent' => '#f4c94c', 'active' => true],
-        'mines' => ['name' => 'Dot.Mines', 'url' => env('DOT_MINES_URL', 'https://mines.infodot.app'), 'icon' => 'terrain', 'accent' => '#f1c62e', 'active' => false],
+        'mines' => ['name' => 'Dot.Mines', 'url' => env('DOT_MINES_URL', 'https://mines.infodot.app'), 'icon' => 'terrain', 'accent' => '#f1c62e', 'active' => true],
         'notify' => ['name' => 'Dot.Notify', 'url' => env('DOT_NOTIFY_URL', 'https://notify.infodot.app'), 'icon' => 'notifications', 'accent' => '#f0c33a', 'active' => true],
         'plug' => ['name' => 'Dot.Plug', 'url' => env('DOT_PLUG_URL', 'https://plug.infodot.app'), 'icon' => 'extension', 'accent' => '#f0c33a', 'active' => true],
         'press' => ['name' => 'Dot.Press', 'url' => env('DOT_PRESS_URL', 'https://press.infodot.app'), 'icon' => 'newspaper', 'accent' => '#f0c33a', 'active' => true],
