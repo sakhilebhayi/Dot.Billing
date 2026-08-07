@@ -31,7 +31,7 @@ class InvoiceTable extends Component
         // team scoping now comes from BillingInvoice's HasTeamScope global scope
         return BillingInvoice::query()
             ->when($this->filterStatus, fn ($q) => $q->where('status', $this->filterStatus))
-            ->when($this->search, fn ($q) => $q->where('invoice_number', 'like', '%' . $this->search . '%'))
+            ->when($this->search, fn ($q) => $q->where('invoice_number', 'like', '%'.$this->search.'%'))
             ->orderByDesc('created_at')
             ->paginate(10);
     }

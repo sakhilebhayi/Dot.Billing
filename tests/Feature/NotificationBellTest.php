@@ -30,11 +30,11 @@ class NotificationBellTest extends TestCase
         $team = $user->currentTeam;
 
         $invoice = BillingInvoice::create([
-            'team_id'        => $team->id,
+            'team_id' => $team->id,
             'invoice_number' => 'INV-300',
-            'status'         => 'open',
-            'total'          => 75,
-            'due_date'       => now()->addDays(3),
+            'status' => 'open',
+            'total' => 75,
+            'due_date' => now()->addDays(3),
         ]);
 
         $user->notify(new InvoiceDueNotification($invoice));
@@ -57,10 +57,10 @@ class NotificationBellTest extends TestCase
         $team = $user->currentTeam;
 
         $invoice = BillingInvoice::create([
-            'team_id'        => $team->id,
+            'team_id' => $team->id,
             'invoice_number' => 'INV-301',
-            'status'         => 'open',
-            'total'          => 40,
+            'status' => 'open',
+            'total' => 40,
         ]);
 
         $user->notify(new InvoiceDueNotification($invoice));

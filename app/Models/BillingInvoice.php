@@ -19,11 +19,11 @@ class BillingInvoice extends Model
     ];
 
     protected $casts = [
-        'due_date'  => 'datetime',
-        'paid_at'   => 'datetime',
-        'total'     => 'decimal:2',
-        'subtotal'  => 'decimal:2',
-        'tax'       => 'decimal:2',
+        'due_date' => 'datetime',
+        'paid_at' => 'datetime',
+        'total' => 'decimal:2',
+        'subtotal' => 'decimal:2',
+        'tax' => 'decimal:2',
     ];
 
     public function team(): BelongsTo

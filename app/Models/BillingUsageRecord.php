@@ -17,7 +17,7 @@ class BillingUsageRecord extends Model
     ];
 
     protected $casts = [
-        'quantity'    => 'decimal:4',
+        'quantity' => 'decimal:4',
         'recorded_at' => 'datetime',
     ];
 

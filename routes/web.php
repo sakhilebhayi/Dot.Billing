@@ -33,7 +33,7 @@ Route::middleware([
         $subscription = BillingSubscription::with('plan')->first();
 
         return view('dashboard', [
-            'planName'     => $subscription?->plan?->name ?? 'No Plan',
+            'planName' => $subscription?->plan?->name ?? 'No Plan',
             'openInvoices' => BillingInvoice::where('status', 'open')->count(),
             'totalPaidYtd' => BillingInvoice::where('status', 'paid')->whereYear('paid_at', now()->year)->sum('total'),
             'activeAlerts' => BillingAlert::where('status', 'active')->count(),

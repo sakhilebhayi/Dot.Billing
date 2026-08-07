@@ -17,10 +17,10 @@ class InvoiceViewTest extends TestCase
         $team = Team::factory()->create();
 
         $invoice = BillingInvoice::create([
-            'team_id'        => $team->id,
+            'team_id' => $team->id,
             'invoice_number' => 'INV-100',
-            'status'         => 'open',
-            'total'          => 100,
+            'status' => 'open',
+            'total' => 100,
         ]);
 
         $this->get(route('invoices.show', $invoice))->assertRedirect('/login');
@@ -32,11 +32,11 @@ class InvoiceViewTest extends TestCase
         $team = $user->currentTeam;
 
         $invoice = BillingInvoice::create([
-            'team_id'        => $team->id,
+            'team_id' => $team->id,
             'invoice_number' => 'INV-101',
-            'status'         => 'paid',
-            'total'          => 250,
-            'paid_at'        => now(),
+            'status' => 'paid',
+            'total' => 250,
+            'paid_at' => now(),
         ]);
 
         $this->actingAs($user)
@@ -48,14 +48,14 @@ class InvoiceViewTest extends TestCase
 
     public function test_user_cannot_view_another_teams_invoice(): void
     {
-        $user      = User::factory()->withPersonalTeam()->create();
+        $user = User::factory()->withPersonalTeam()->create();
         $otherTeam = Team::factory()->create();
 
         $invoice = BillingInvoice::create([
-            'team_id'        => $otherTeam->id,
+            'team_id' => $otherTeam->id,
             'invoice_number' => 'INV-102',
-            'status'         => 'open',
-            'total'          => 500,
+            'status' => 'open',
+            'total' => 500,
         ]);
 
         // As of BillingInvoice's HasTeamScope global scope, cross-team access
@@ -76,16 +76,16 @@ class InvoiceViewTest extends TestCase
         $team = $user->currentTeam;
 
         BillingInvoice::create([
-            'team_id'        => $team->id,
+            'team_id' => $team->id,
             'invoice_number' => 'INV-200',
-            'status'         => 'open',
-            'total'          => 10,
+            'status' => 'open',
+            'total' => 10,
         ]);
         BillingInvoice::create([
-            'team_id'        => $team->id,
+            'team_id' => $team->id,
             'invoice_number' => 'INV-999',
-            'status'         => 'open',
-            'total'          => 20,
+            'status' => 'open',
+            'total' => 20,
         ]);
 
         $this->actingAs($user)->get('/dashboard')->assertOk()->assertSee('INV-200')->assertSee('INV-999');
@@ -102,15 +102,15 @@ class InvoiceViewTest extends TestCase
      */
     public function test_scope_alone_blocks_cross_team_access_even_without_a_policy_check(): void
     {
-        $owner    = User::factory()->withPersonalTeam()->create();
-        $ownTeam  = $owner->currentTeam;
+        $owner = User::factory()->withPersonalTeam()->create();
+        $ownTeam = $owner->currentTeam;
         $attacker = User::factory()->withPersonalTeam()->create();
 
         $invoice = BillingInvoice::create([
-            'team_id'        => $ownTeam->id,
+            'team_id' => $ownTeam->id,
             'invoice_number' => 'INV-300',
-            'status'         => 'open',
-            'total'          => 750,
+            'status' => 'open',
+            'total' => 750,
         ]);
 
         $this->actingAs($attacker);

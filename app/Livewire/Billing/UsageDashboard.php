@@ -12,6 +12,7 @@ use Livewire\Component;
 class UsageDashboard extends Component
 {
     public string $selectedPeriod = 'this_month';
+
     public array $aiInsights = [];
 
     /**
@@ -57,8 +58,8 @@ class UsageDashboard extends Component
             abort(403, 'No active team selected.');
         }
 
-        $service = new AiBillingService();
-        $result  = $service->analyzeSpend($team, $this->usageByPlatform);
+        $service = new AiBillingService;
+        $result = $service->analyzeSpend($team, $this->usageByPlatform);
         $this->aiInsights = $result['insights'];
     }
 

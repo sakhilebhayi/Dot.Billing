@@ -13,9 +13,7 @@ use Illuminate\Notifications\Notification;
  */
 class PaymentFailedNotification extends Notification
 {
-    public function __construct(public BillingPayment $payment)
-    {
-    }
+    public function __construct(public BillingPayment $payment) {}
 
     /**
      * @return array<int, string>
@@ -31,9 +29,9 @@ class PaymentFailedNotification extends Notification
     public function toDatabase(object $notifiable): array
     {
         return [
-            'type'      => 'payment_failed',
-            'title'     => 'Payment failed',
-            'message'   => 'A payment of ' . $this->payment->currency . ' ' . number_format((float) $this->payment->amount, 2) . ' failed' . ($this->payment->failure_reason ? ": {$this->payment->failure_reason}" : '.'),
+            'type' => 'payment_failed',
+            'title' => 'Payment failed',
+            'message' => 'A payment of '.$this->payment->currency.' '.number_format((float) $this->payment->amount, 2).' failed'.($this->payment->failure_reason ? ": {$this->payment->failure_reason}" : '.'),
             'payment_id' => $this->payment->id,
         ];
     }

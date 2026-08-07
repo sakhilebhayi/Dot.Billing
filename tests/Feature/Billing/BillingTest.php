@@ -16,6 +16,7 @@ class BillingTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Team $team;
 
     protected function setUp(): void
@@ -43,10 +44,10 @@ class BillingTest extends TestCase
     public function test_billing_plan_can_be_created(): void
     {
         $plan = BillingPlan::create([
-            'name'          => 'Pro',
-            'slug'          => 'pro',
+            'name' => 'Pro',
+            'slug' => 'pro',
             'price_monthly' => 299.00,
-            'price_annual'  => 2990.00,
+            'price_annual' => 2990.00,
         ]);
         $this->assertDatabaseHas('billing_plans', ['slug' => 'pro']);
         $this->assertFalse($plan->isFree());
@@ -55,10 +56,10 @@ class BillingTest extends TestCase
     public function test_free_plan_detection(): void
     {
         $plan = BillingPlan::create([
-            'name'          => 'Free',
-            'slug'          => 'free',
+            'name' => 'Free',
+            'slug' => 'free',
             'price_monthly' => 0,
-            'price_annual'  => 0,
+            'price_annual' => 0,
         ]);
         $this->assertTrue($plan->isFree());
     }
@@ -66,14 +67,14 @@ class BillingTest extends TestCase
     public function test_subscription_belongs_to_team(): void
     {
         $plan = BillingPlan::create([
-            'name'          => 'Starter',
-            'slug'          => 'starter',
+            'name' => 'Starter',
+            'slug' => 'starter',
             'price_monthly' => 99,
         ]);
         $sub = BillingSubscription::create([
-            'team_id'       => $this->team->id,
-            'plan_id'       => $plan->id,
-            'status'        => 'active',
+            'team_id' => $this->team->id,
+            'plan_id' => $plan->id,
+            'status' => 'active',
             'billing_cycle' => 'monthly',
         ]);
         $this->assertTrue($sub->team->is($this->team));
@@ -83,11 +84,11 @@ class BillingTest extends TestCase
     public function test_invoice_overdue_detection(): void
     {
         $invoice = BillingInvoice::create([
-            'team_id'        => $this->team->id,
+            'team_id' => $this->team->id,
             'invoice_number' => 'INV-001',
-            'status'         => 'open',
-            'total'          => 500,
-            'due_date'       => now()->subDays(5),
+            'status' => 'open',
+            'total' => 500,
+            'due_date' => now()->subDays(5),
         ]);
         $this->assertTrue($invoice->isOverdue());
         $this->assertFalse($invoice->isPaid());
@@ -96,11 +97,11 @@ class BillingTest extends TestCase
     public function test_paid_invoice_not_overdue(): void
     {
         $invoice = BillingInvoice::create([
-            'team_id'        => $this->team->id,
+            'team_id' => $this->team->id,
             'invoice_number' => 'INV-002',
-            'status'         => 'paid',
-            'total'          => 299,
-            'paid_at'        => now(),
+            'status' => 'paid',
+            'total' => 299,
+            'paid_at' => now(),
         ]);
         $this->assertTrue($invoice->isPaid());
         $this->assertFalse($invoice->isOverdue());
@@ -109,11 +110,11 @@ class BillingTest extends TestCase
     public function test_billing_alert_active_status(): void
     {
         $alert = BillingAlert::create([
-            'team_id'          => $this->team->id,
-            'type'             => 'budget_threshold',
+            'team_id' => $this->team->id,
+            'type' => 'budget_threshold',
             'threshold_metric' => 'monthly_spend',
-            'threshold_value'  => 1000,
-            'status'           => 'active',
+            'threshold_value' => 1000,
+            'status' => 'active',
         ]);
         $this->assertTrue($alert->isActive());
     }
@@ -121,10 +122,10 @@ class BillingTest extends TestCase
     public function test_team_has_billing_relationships(): void
     {
         BillingInvoice::create([
-            'team_id'        => $this->team->id,
+            'team_id' => $this->team->id,
             'invoice_number' => 'INV-003',
-            'status'         => 'paid',
-            'total'          => 100,
+            'status' => 'paid',
+            'total' => 100,
         ]);
         $this->assertCount(1, $this->team->invoices);
     }
@@ -150,17 +151,17 @@ class BillingTest extends TestCase
     public function test_dashboard_returns_correct_counts(): void
     {
         BillingInvoice::create([
-            'team_id'        => $this->team->id,
+            'team_id' => $this->team->id,
             'invoice_number' => 'INV-004',
-            'status'         => 'open',
-            'total'          => 50,
+            'status' => 'open',
+            'total' => 50,
         ]);
         BillingInvoice::create([
-            'team_id'        => $this->team->id,
+            'team_id' => $this->team->id,
             'invoice_number' => 'INV-005',
-            'status'         => 'paid',
-            'total'          => 200,
-            'paid_at'        => now(),
+            'status' => 'paid',
+            'total' => 200,
+            'paid_at' => now(),
         ]);
 
         $this->actingAs($this->user)

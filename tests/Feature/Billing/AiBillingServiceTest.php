@@ -2,10 +2,12 @@
 
 namespace Tests\Feature\Billing;
 
+use App\Livewire\Billing\UsageDashboard;
 use App\Models\Team;
 use App\Models\User;
 use App\Services\AiBillingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -28,8 +30,8 @@ class AiBillingServiceTest extends TestCase
     {
         config(['services.anthropic.api_key' => 'sk-test-key-123']);
 
-        $service = new AiBillingService();
-        $apiKey  = (new \ReflectionProperty($service, 'apiKey'))->getValue($service);
+        $service = new AiBillingService;
+        $apiKey = (new \ReflectionProperty($service, 'apiKey'))->getValue($service);
 
         $this->assertSame('sk-test-key-123', $apiKey);
     }
@@ -39,7 +41,7 @@ class AiBillingServiceTest extends TestCase
         config(['services.anthropic.api_key' => '']);
 
         $team = Team::factory()->create();
-        $service = new AiBillingService();
+        $service = new AiBillingService;
 
         $result = $service->analyzeSpend($team, ['dot-tasks' => ['api_calls' => 100]]);
 
@@ -60,8 +62,8 @@ class AiBillingServiceTest extends TestCase
 
         $user = User::factory()->withPersonalTeam()->create();
 
-        \Livewire\Livewire::actingAs($user)
-            ->test(\App\Livewire\Billing\UsageDashboard::class)
+        Livewire::actingAs($user)
+            ->test(UsageDashboard::class)
             ->call('analyzeSpend')
             ->assertSet('aiInsights', [
                 'Usage is within normal range for your plan.',

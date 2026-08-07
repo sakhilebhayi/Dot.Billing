@@ -13,9 +13,7 @@ use Illuminate\Notifications\Notification;
  */
 class InvoiceDueNotification extends Notification
 {
-    public function __construct(public BillingInvoice $invoice)
-    {
-    }
+    public function __construct(public BillingInvoice $invoice) {}
 
     /**
      * @return array<int, string>
@@ -31,12 +29,12 @@ class InvoiceDueNotification extends Notification
     public function toDatabase(object $notifiable): array
     {
         return [
-            'type'           => 'invoice_due',
-            'title'          => 'Invoice due',
-            'message'        => "Invoice {$this->invoice->invoice_number} for {$this->invoice->currency} " . number_format((float) $this->invoice->total, 2) . ' is due ' . ($this->invoice->due_date?->format('M d, Y') ?? 'soon') . '.',
-            'invoice_id'     => $this->invoice->id,
+            'type' => 'invoice_due',
+            'title' => 'Invoice due',
+            'message' => "Invoice {$this->invoice->invoice_number} for {$this->invoice->currency} ".number_format((float) $this->invoice->total, 2).' is due '.($this->invoice->due_date?->format('M d, Y') ?? 'soon').'.',
+            'invoice_id' => $this->invoice->id,
             'invoice_number' => $this->invoice->invoice_number,
-            'url'            => route('invoices.show', $this->invoice),
+            'url' => route('invoices.show', $this->invoice),
         ];
     }
 }

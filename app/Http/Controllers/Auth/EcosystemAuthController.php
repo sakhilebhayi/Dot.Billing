@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,7 +22,7 @@ class EcosystemAuthController extends Controller
             403
         );
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = $accessToken->tokenable;
         $accessToken->delete();
 

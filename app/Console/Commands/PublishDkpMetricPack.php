@@ -49,7 +49,7 @@ class PublishDkpMetricPack extends Command
 
         $body = $this->computeMetric();
 
-        $packId = 'dkp:' . config('dkp.platform') . ':' . (string) Str::uuid();
+        $packId = 'dkp:'.config('dkp.platform').':'.(string) Str::uuid();
         $createdAt = now()->toIso8601ZuluString();
 
         $pack = [
@@ -59,9 +59,9 @@ class PublishDkpMetricPack extends Command
             'platform' => config('dkp.platform'),
             'title' => 'Invoice payment success rate — definition and current observations',
             'summary' => 'The exact computation rule for billing.invoice_payment_success_rate, plus '
-                . 'whatever real observations exist in this database at publish time. This is '
-                . "Dot.Billing's first published Knowledge Pack — see body.observations for what is "
-                . 'actually measured versus definitional.',
+                .'whatever real observations exist in this database at publish time. This is '
+                ."Dot.Billing's first published Knowledge Pack — see body.observations for what is "
+                .'actually measured versus definitional.',
             'created_at' => $createdAt,
             'contributors' => [
                 [
@@ -113,12 +113,12 @@ class PublishDkpMetricPack extends Command
 
         $outputDir = config('dkp.output_path');
         File::ensureDirectoryExists($outputDir);
-        $outputPath = $outputDir . '/' . Str::after($packId, ':' . config('dkp.platform') . ':') . '.json';
-        File::put($outputPath, json_encode($pack, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+        $outputPath = $outputDir.'/'.Str::after($packId, ':'.config('dkp.platform').':').'.json';
+        File::put($outputPath, json_encode($pack, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
 
         $this->info("Pack written to {$outputPath}");
         $this->line("pack_id: {$packId}");
-        $this->line('Signature verifies: ' . ($this->verify($pack, $keypair) ? 'yes' : 'NO — DO NOT PUBLISH'));
+        $this->line('Signature verifies: '.($this->verify($pack, $keypair) ? 'yes' : 'NO — DO NOT PUBLISH'));
 
         return self::SUCCESS;
     }
@@ -136,7 +136,7 @@ class PublishDkpMetricPack extends Command
             'metric_name' => 'billing.invoice_payment_success_rate',
             'domain' => 'payments',
             'definition' => 'Invoices with status=paid and paid_at <= due_date, divided by all '
-                . 'invoices with due_date in the same calendar month, computed monthly.',
+                .'invoices with due_date in the same calendar month, computed monthly.',
             'unit' => 'ratio',
             'direction_of_good' => 'up',
             'dimensions' => ['currency'],

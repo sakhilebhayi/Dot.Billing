@@ -15,10 +15,10 @@ class BillingPlan extends Model
     ];
 
     protected $casts = [
-        'features'      => 'array',
-        'is_active'     => 'boolean',
+        'features' => 'array',
+        'is_active' => 'boolean',
         'price_monthly' => 'decimal:2',
-        'price_annual'  => 'decimal:2',
+        'price_annual' => 'decimal:2',
     ];
 
     public function subscriptions(): HasMany

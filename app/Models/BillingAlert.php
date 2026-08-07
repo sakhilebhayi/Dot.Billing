@@ -17,7 +17,7 @@ class BillingAlert extends Model
     ];
 
     protected $casts = [
-        'triggered_at'    => 'datetime',
+        'triggered_at' => 'datetime',
         'threshold_value' => 'decimal:2',
     ];
 

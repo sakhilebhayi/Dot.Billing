@@ -7,12 +7,13 @@ use App\Models\Team;
 class AiBillingService
 {
     private string $apiKey;
+
     private string $model;
 
     public function __construct()
     {
         $this->apiKey = config('services.anthropic.api_key', '');
-        $this->model  = config('services.anthropic.model', 'claude-sonnet-4-6');
+        $this->model = config('services.anthropic.model', 'claude-sonnet-4-6');
     }
 
     /**
@@ -26,7 +27,7 @@ class AiBillingService
     private function fallbackResult(): array
     {
         return [
-            'insights'    => [
+            'insights' => [
                 'Usage is within normal range for your plan.',
                 'Consider upgrading to Pro to unlock unlimited API calls.',
             ],
@@ -41,10 +42,10 @@ class AiBillingService
             return $this->fallbackResult();
         }
 
-        $prompt = "You are a billing intelligence AI for the InfoDot ecosystem.\n\n" .
-            "Team: {$team->name}\n" .
-            "Usage summary: " . json_encode($usageSummary) . "\n\n" .
-            "Analyse this spend data and return JSON: {\"insights\": [\"...\",\"...\"], \"savings_zar\": <number>}";
+        $prompt = "You are a billing intelligence AI for the InfoDot ecosystem.\n\n".
+            "Team: {$team->name}\n".
+            'Usage summary: '.json_encode($usageSummary)."\n\n".
+            'Analyse this spend data and return JSON: {"insights": ["...","..."], "savings_zar": <number>}';
 
         $response = $this->callClaude($prompt);
 
@@ -59,7 +60,7 @@ class AiBillingService
         $decoded = json_decode($response, true);
 
         return [
-            'insights'    => $decoded['insights'] ?? [],
+            'insights' => $decoded['insights'] ?? [],
             'savings_zar' => $decoded['savings_zar'] ?? 0,
             'tokens_used' => 0,
         ];
@@ -78,22 +79,22 @@ class AiBillingService
         $ch = curl_init('https://api.anthropic.com/v1/messages');
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST           => true,
+            CURLOPT_POST => true,
             CURLOPT_CONNECTTIMEOUT => 5,
-            CURLOPT_TIMEOUT        => 15,
-            CURLOPT_HTTPHEADER     => [
-                'x-api-key: ' . $this->apiKey,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_HTTPHEADER => [
+                'x-api-key: '.$this->apiKey,
                 'anthropic-version: 2023-06-01',
                 'content-type: application/json',
             ],
             CURLOPT_POSTFIELDS => json_encode([
-                'model'      => $this->model,
+                'model' => $this->model,
                 'max_tokens' => 512,
-                'messages'   => [['role' => 'user', 'content' => $prompt]],
+                'messages' => [['role' => 'user', 'content' => $prompt]],
             ]),
         ]);
-        $body       = curl_exec($ch);
-        $errorNo    = curl_errno($ch);
+        $body = curl_exec($ch);
+        $errorNo = curl_errno($ch);
         $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
@@ -102,6 +103,7 @@ class AiBillingService
         }
 
         $data = json_decode($body, true);
+
         return $data['content'][0]['text'] ?? '{}';
     }
 }

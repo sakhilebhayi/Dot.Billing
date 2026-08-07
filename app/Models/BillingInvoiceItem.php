@@ -15,7 +15,7 @@ class BillingInvoiceItem extends Model
 
     protected $casts = [
         'unit_price' => 'decimal:2',
-        'amount'     => 'decimal:2',
+        'amount' => 'decimal:2',
     ];
 
     public function invoice(): BelongsTo

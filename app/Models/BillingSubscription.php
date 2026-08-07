@@ -19,10 +19,10 @@ class BillingSubscription extends Model
     ];
 
     protected $casts = [
-        'trial_ends_at'        => 'datetime',
+        'trial_ends_at' => 'datetime',
         'current_period_start' => 'datetime',
-        'current_period_end'   => 'datetime',
-        'canceled_at'          => 'datetime',
+        'current_period_end' => 'datetime',
+        'canceled_at' => 'datetime',
     ];
 
     public function team(): BelongsTo
