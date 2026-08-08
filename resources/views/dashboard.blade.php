@@ -25,6 +25,9 @@
         </div>
     </div>
     <livewire:billing.billing-overview />
+    <div style="margin-top:1.25rem;">
+        <livewire:billing.payment-reliability />
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-top:1.25rem;">
         <livewire:billing.invoice-table />
         <livewire:billing.usage-dashboard />
