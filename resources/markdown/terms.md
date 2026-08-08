@@ -48,4 +48,4 @@ These Terms are governed by the laws of the Republic of South Africa, and any di
 
 ## 11. Contact us
 
-Questions about these Terms can be sent to [support@infodot.co.za](mailto:support@infodot.co.za), or via our [Contact page](/contact). For anything about your personal information specifically, see our [Privacy Policy](/policy).
+Questions about these Terms can be sent to [support@infodot.co.za](mailto:support@infodot.co.za). For anything about your personal information specifically, see our [Privacy Policy](/privacy-policy).

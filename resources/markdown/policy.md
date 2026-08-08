@@ -71,4 +71,4 @@ We may update this Privacy Policy from time to time. We'll change the "Last upda
 
 ## 13. Contact us
 
-Questions about this Privacy Policy can be sent to [privacy@infodot.co.za](mailto:privacy@infodot.co.za), or via our [Contact page](/contact).
+Questions about this Privacy Policy can be sent to [privacy@infodot.co.za](mailto:privacy@infodot.co.za).

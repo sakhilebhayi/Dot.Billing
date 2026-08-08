@@ -28,4 +28,4 @@ We may update this Cookie Policy if the cookies Dot.Billing sets change. We'll c
 
 ## Contact us
 
-Questions about this Cookie Policy can be sent to [privacy@infodot.co.za](mailto:privacy@infodot.co.za). See also our [Privacy Policy](/policy) and [Terms & Conditions](/terms).
+Questions about this Cookie Policy can be sent to [privacy@infodot.co.za](mailto:privacy@infodot.co.za). See also our [Privacy Policy](/privacy-policy) and [Terms & Conditions](/terms-of-service).
