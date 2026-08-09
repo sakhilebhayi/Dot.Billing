@@ -41,4 +41,8 @@ Route::middleware([
     })->name('dashboard');
 
     Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
+
+    Route::middleware('operator')->prefix('operator')->name('operator.')->group(function () {
+        Route::get('/dunning-cases', fn () => view('operator.dunning-cases'))->name('dunning-cases.index');
+    });
 });

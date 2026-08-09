@@ -34,7 +34,7 @@
 **Interfaces:**
 - Produces: `users.is_platform_operator` (bool, default false); `DunningCase` model, `$fillable = ['team_id', 'invoice_id', 'payment_id', 'reason', 'status', 'resolved_at', 'resolved_by', 'resolution_notes']`, relations `team()`, `invoice()`, `payment()`, `resolver()`.
 
-- [ ] **Step 1: Write the `is_platform_operator` migration**
+- [x] **Step 1: Write the `is_platform_operator` migration**
 
 Create `database/migrations/2026_08_09_000001_add_is_platform_operator_to_users_table.php`:
 
@@ -63,7 +63,7 @@ return new class extends Migration
 };
 ```
 
-- [ ] **Step 2: Write the `dunning_cases` migration**
+- [x] **Step 2: Write the `dunning_cases` migration**
 
 Create `database/migrations/2026_08_09_000002_create_dunning_cases_table.php`:
 
@@ -101,18 +101,18 @@ return new class extends Migration
 };
 ```
 
-- [ ] **Step 3: Run migrations**
+- [x] **Step 3: Run migrations**
 
 Run: `php artisan migrate`
 Expected: both migrations run without error.
 
-- [ ] **Step 4: Add the cast to `User`**
+- [x] **Step 4: Add the cast to `User`**
 
 In `app/Models/User.php`, inside the existing `casts(): array` method, add
 `'is_platform_operator' => 'boolean',` to the returned array. Do **not** add
 `is_platform_operator` to `$fillable`.
 
-- [ ] **Step 5: Write the `DunningCase` model**
+- [x] **Step 5: Write the `DunningCase` model**
 
 Create `app/Models/DunningCase.php`:
 
@@ -157,7 +157,7 @@ class DunningCase extends Model
 }
 ```
 
-- [ ] **Step 6: Write a model test**
+- [x] **Step 6: Write a model test**
 
 Create `tests/Unit/Models/DunningCaseTest.php`:
 
@@ -226,16 +226,16 @@ class DunningCaseTest extends TestCase
 }
 ```
 
-- [ ] **Step 7: Run the tests**
+- [x] **Step 7: Run the tests**
 
 Run: `php artisan test --compact tests/Unit/Models/DunningCaseTest.php`
 Expected: PASS, 2 tests.
 
-- [ ] **Step 8: Run Pint**
+- [x] **Step 8: Run Pint**
 
 Run: `vendor/bin/pint --dirty --format agent`
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add database/migrations/2026_08_09_000001_add_is_platform_operator_to_users_table.php \
@@ -274,7 +274,7 @@ EOF
 - Consumes: `BillingInvoice::isOverdue()` (existing), `Team::owner` (Jetstream's base `Team` relation), `DunningCase::create()` (Task 1), `App\Notifications\InvoiceDueNotification`/`PaymentFailedNotification` (existing).
 - Produces: Artisan command `billing:scan-alerts`.
 
-- [ ] **Step 1: Write the failing command test**
+- [x] **Step 1: Write the failing command test**
 
 Create `tests/Feature/Console/ScanBillingAlertsCommandTest.php`:
 
@@ -402,12 +402,12 @@ class ScanBillingAlertsCommandTest extends TestCase
 }
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/Console/ScanBillingAlertsCommandTest.php`
 Expected: FAIL — command `billing:scan-alerts` does not exist yet.
 
-- [ ] **Step 3: Write the command**
+- [x] **Step 3: Write the command**
 
 Create `app/Console/Commands/ScanBillingAlerts.php`:
 
@@ -495,12 +495,12 @@ class ScanBillingAlerts extends Command
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/Console/ScanBillingAlertsCommandTest.php`
 Expected: PASS, 4 tests, 0 failures.
 
-- [ ] **Step 5: Add the schedule entry**
+- [x] **Step 5: Add the schedule entry**
 
 `routes/console.php` currently has only the stock `inspire` command. Add:
 
@@ -517,11 +517,11 @@ Schedule::command(ScanBillingAlerts::class)
     ->onOneServer();
 ```
 
-- [ ] **Step 6: Run Pint**
+- [x] **Step 6: Run Pint**
 
 Run: `vendor/bin/pint --dirty --format agent`
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add app/Console/Commands/ScanBillingAlerts.php routes/console.php \
@@ -564,7 +564,7 @@ EOF
 - Consumes: `DunningCase` (Task 1).
 - Produces: `Gate`-checkable ability `review` on `DunningCase`; `operator` middleware alias; Livewire component `billing.dunning-queue`; route `operator.dunning-cases.index`.
 
-- [ ] **Step 1: Write the failing Livewire test**
+- [x] **Step 1: Write the failing Livewire test**
 
 Create `tests/Feature/Livewire/DunningQueueTest.php`:
 
@@ -665,12 +665,12 @@ class DunningQueueTest extends TestCase
 }
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/Livewire/DunningQueueTest.php`
 Expected: FAIL — `App\Livewire\Billing\DunningQueue` doesn't exist.
 
-- [ ] **Step 3: Write the policy**
+- [x] **Step 3: Write the policy**
 
 Create `app/Policies/DunningCasePolicy.php`:
 
@@ -694,7 +694,7 @@ class DunningCasePolicy
 }
 ```
 
-- [ ] **Step 4: Write the middleware**
+- [x] **Step 4: Write the middleware**
 
 Create `app/Http/Middleware/EnsurePlatformOperator.php`:
 
@@ -718,7 +718,7 @@ class EnsurePlatformOperator
 }
 ```
 
-- [ ] **Step 5: Register the middleware alias**
+- [x] **Step 5: Register the middleware alias**
 
 In `bootstrap/app.php`, add `use App\Http\Middleware\EnsurePlatformOperator;`
 to the top import block, and inside the existing (currently empty)
@@ -730,7 +730,7 @@ $middleware->alias([
 ]);
 ```
 
-- [ ] **Step 6: Write the Livewire component**
+- [x] **Step 6: Write the Livewire component**
 
 Create `app/Livewire/Billing/DunningQueue.php`:
 
@@ -796,7 +796,66 @@ class DunningQueue extends Component
 }
 ```
 
-- [ ] **Step 7: Write the Blade view**
+- [x] **Step 6a (discovered via TDD, not in the original draft): fix a real
+  cross-team-visibility bug**
+
+Running the Step 1 test against this Step 6 draft (Step 10, run early to
+check progress) produced 2 real failures, not the expected pass: `extend()`
+silently didn't change `due_date`, and `cancelSubscription()` silently
+didn't change the subscription's `status`. Traced via the SQL log rather
+than guessed: `BillingInvoice`/`BillingPayment`/`BillingSubscription` all
+carry `HasTeamScope`, and this repo's actual implementation of that trait
+**fails closed** — `Auth::check() && ! Auth::user()->currentTeam` adds a
+`1 = 0` clause (see `app/Models/Concerns/HasTeamScope.php`), specifically to
+stop an authenticated-but-teamless request from seeing every team's rows. A
+`platform_operator` is exactly that case by design (Global Constraints and
+the spec's Design §2 both said "not a member of that team" — the
+implication that they're also *teamless*, and what that does to every
+relation `DunningCase` traverses into, wasn't traced through at spec time).
+
+Fix: `DunningCase::invoice()`/`::payment()` (Task 1's model) now call
+`->withoutGlobalScope('team')`, and `cancelSubscription()` below queries
+`BillingSubscription` directly with the same bypass instead of traversing
+`$case->team->subscription`. Re-apply Task 1's `app/Models/DunningCase.php`
+with this change:
+
+```php
+public function invoice(): BelongsTo
+{
+    return $this->belongsTo(BillingInvoice::class)->withoutGlobalScope('team');
+}
+
+public function payment(): BelongsTo
+{
+    return $this->belongsTo(BillingPayment::class)->withoutGlobalScope('team');
+}
+```
+
+And replace `cancelSubscription()` in the component above with:
+
+```php
+public function cancelSubscription(int $id): void
+{
+    $case = DunningCase::findOrFail($id);
+    Gate::authorize('review', $case);
+
+    BillingSubscription::withoutGlobalScope('team')
+        ->where('team_id', $case->team_id)
+        ->first()
+        ?->update(['status' => 'canceled', 'canceled_at' => now()]);
+
+    $case->update(['status' => 'canceled', 'resolved_at' => now(), 'resolved_by' => auth()->id()]);
+
+    unset($this->cases);
+}
+```
+
+(add `use App\Models\BillingSubscription;` to the component's imports).
+`ScanBillingAlerts` (Task 2) is unaffected — it runs via Artisan with no
+authenticated user at all, so `HasTeamScope`'s condition never reaches the
+fail-closed branch there.
+
+- [x] **Step 7: Write the Blade view**
 
 Create `resources/views/livewire/billing/dunning-queue.blade.php`, matching
 the `.dot-card` dark-theme convention from `resources/views/dashboard.blade.php`:
@@ -839,7 +898,7 @@ the `.dot-card` dark-theme convention from `resources/views/dashboard.blade.php`
 </div>
 ```
 
-- [ ] **Step 8: Write the page wrapper view**
+- [x] **Step 8: Write the page wrapper view**
 
 Create `resources/views/operator/dunning-cases.blade.php`:
 
@@ -852,7 +911,7 @@ Create `resources/views/operator/dunning-cases.blade.php`:
 </x-app-layout>
 ```
 
-- [ ] **Step 9: Add the route**
+- [x] **Step 9: Add the route**
 
 In `routes/web.php`, inside the existing authenticated middleware group
 (after the `/invoices/{invoice}` route), add:
@@ -863,18 +922,18 @@ Route::middleware('operator')->prefix('operator')->name('operator.')->group(func
 });
 ```
 
-- [ ] **Step 10: Run the test to verify it passes**
+- [x] **Step 10: Run the test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/Livewire/DunningQueueTest.php`
 Expected: PASS, 4 tests, 0 failures.
 
-- [ ] **Step 11: Manual verification**
+- [x] **Step 11: Manual verification**
 
 Per this repo's own no-tinker rule, do not verify with `tinker` or a
 throwaway script — the Livewire test above already exercises this. Skip
 manual verification.
 
-- [ ] **Step 12: Run Pint**
+- [x] **Step 12: Run Pint**
 
 Run: `vendor/bin/pint --dirty --format agent`
 

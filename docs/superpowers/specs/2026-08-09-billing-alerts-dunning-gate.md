@@ -78,6 +78,25 @@ silently hide every case from the one person who needs to see them across
 every team. Same reasoning already applied to Dot.Agents'
 `RetentionPurgeProposal` in this program.
 
+**Correction found during implementation, via a genuinely failing test:**
+this reasoning was necessary but not sufficient. `DunningCase` itself
+correctly has no scope, but its `invoice()`/`payment()` relations resolve
+into `BillingInvoice`/`BillingPayment`, which *do* carry `HasTeamScope` —
+and this repo's actual implementation of that trait (unlike the simpler
+version referenced from Dot.Analytics earlier in this program) **fails
+closed**: `Auth::check() && ! Auth::user()->currentTeam` adds a `1 = 0`
+clause rather than skipping the scope, specifically to stop an
+authenticated-but-teamless request from silently seeing every team's rows.
+A platform operator is exactly that "authenticated but teamless" case by
+design — so the fail-closed guard, built for a different threat, blocked
+the operator from the invoice/subscription data their own review screen
+needs. Confirmed by writing the Livewire test first, watching `extend()`
+silently no-op instead of updating `due_date`, and tracing it to the
+raw SQL (`... and 1 = 0`) rather than guessing. Fixed by having
+`DunningCase::invoice()`/`::payment()` call `->withoutGlobalScope('team')`,
+and `DunningQueue::cancelSubscription()` query `BillingSubscription`
+the same way instead of traversing `$case->team->subscription`.
+
 ```php
 class DunningCase extends Model
 {
@@ -89,8 +108,17 @@ class DunningCase extends Model
     protected $casts = ['resolved_at' => 'datetime'];
 
     public function team(): BelongsTo { return $this->belongsTo(Team::class); }
-    public function invoice(): BelongsTo { return $this->belongsTo(BillingInvoice::class); }
-    public function payment(): BelongsTo { return $this->belongsTo(BillingPayment::class); }
+
+    public function invoice(): BelongsTo
+    {
+        return $this->belongsTo(BillingInvoice::class)->withoutGlobalScope('team');
+    }
+
+    public function payment(): BelongsTo
+    {
+        return $this->belongsTo(BillingPayment::class)->withoutGlobalScope('team');
+    }
+
     public function resolver(): BelongsTo { return $this->belongsTo(User::class, 'resolved_by'); }
 }
 ```
@@ -162,7 +190,14 @@ public function cancelSubscription(int $id): void
 {
     Gate::authorize('review', $case = DunningCase::findOrFail($id));
 
-    $case->team->subscription?->update(['status' => 'canceled', 'canceled_at' => now()]);
+    // BillingSubscription::HasTeamScope fails closed for the same reason
+    // as invoice()/payment() above -- query it directly with the scope
+    // bypassed rather than traversing $case->team->subscription.
+    BillingSubscription::withoutGlobalScope('team')
+        ->where('team_id', $case->team_id)
+        ->first()
+        ?->update(['status' => 'canceled', 'canceled_at' => now()]);
+
     $case->update(['status' => 'canceled', 'resolved_at' => now(), 'resolved_by' => auth()->id()]);
 }
 ```
