@@ -970,17 +970,17 @@ EOF
 
 **Files:** none (verification only).
 
-- [ ] **Step 1: Run the full test suite**
+- [x] **Step 1: Run the full test suite**
 
 Run: `php artisan test --compact`
-Expected: 0 failures.
+Actual: PASS, 92 tests, 85 passed, 7 skipped, 0 failures.
 
-- [ ] **Step 2: Run Pint across the whole repo**
+- [x] **Step 2: Run Pint across the whole repo**
 
 Run: `vendor/bin/pint --format agent`
-Expected: `passed` (or auto-fixes with no functional change).
+Actual: `passed`.
 
-- [ ] **Step 3: Report**
+- [x] **Step 3: Report**
 
 Report the final test count and confirm the working tree is clean
 (`git status --short`). No manual tinker verification, per this repo's own
