@@ -1,4 +1,4 @@
-<div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:1.25rem;align-items:start;">
+<div class="r-stack" style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:1.25rem;align-items:start;">
     <div class="dot-card" style="padding:1.5rem;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
             <h3 class="dot-h">Plans</h3>

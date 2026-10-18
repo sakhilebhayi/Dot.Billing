@@ -1,5 +1,5 @@
 <x-app-layout>
-<div style="padding:2rem 2.5rem 3rem;">
+<div class="page-pad" style="padding:2rem 2.5rem 3rem;">
     <div style="margin-bottom:1.5rem;">
         <a href="{{ route('invoices.index') }}" style="font-size:0.78rem;color:#71717a;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
             <span class="material-symbols-rounded" style="font-size:16px;">arrow_back</span>

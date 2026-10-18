@@ -120,6 +120,40 @@
         .form-grid .wide { grid-column:1 / -1; }
         .form-grid label { display:block; margin-bottom:5px; }
         @media (max-width: 900px) { .readout { grid-template-columns:1fr; } .readout > div:nth-last-child(-n+2) { border-bottom:1px solid rgba(255,255,255,0.06); } .form-grid { grid-template-columns:1fr; } }
+
+        /* Responsive shell. Below 860px the sidebar becomes an off-canvas drawer opened from the top bar.
+           At 860px and above none of the rules in this block apply, so the desktop layout is unchanged. */
+        .shell-menu, .shell-close, .shell-backdrop { display:none; }
+        @media (max-width: 859.98px) {
+            .shell-menu { display:inline-flex; align-items:center; gap:6px; min-width:44px; min-height:44px; padding:0 12px 0 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.04); color:#d4d4d8; font-family:'Inter',system-ui,sans-serif; font-size:13px; font-weight:600; cursor:pointer; flex-shrink:0; }
+            .shell-menu .material-symbols-rounded, .shell-close .material-symbols-rounded { font-size:22px; }
+            .shell-close { display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; margin-left:auto; border-radius:8px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.04); color:#d4d4d8; cursor:pointer; flex-shrink:0; }
+            .shell-menu:focus-visible, .shell-close:focus-visible { outline:2px solid #818cf8; outline-offset:2px; }
+            .sidebar { width:min(280px, 86vw); height:100vh; height:100dvh; z-index:60; transform:translateX(-100%); visibility:hidden; transition:transform .22s ease, visibility 0s linear .22s; }
+            .sidebar.is-open { transform:none; visibility:visible; transition:transform .22s ease, visibility 0s; box-shadow:0 0 40px rgba(0,0,0,0.5); }
+            .shell-backdrop { display:block; position:fixed; inset:0; z-index:50; background:rgba(0,0,0,0.6); opacity:0; visibility:hidden; transition:opacity .22s ease, visibility 0s linear .22s; }
+            .shell-backdrop.is-open { opacity:1; visibility:visible; transition:opacity .22s ease, visibility 0s; }
+            html.shell-locked, html.shell-locked body { overflow:hidden; }
+            .sidebar .nav-item { min-height:44px; }
+            .topbar { left:0; padding:0 10px; gap:8px; }
+            .topbar-title { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+            .topbar-team { max-width:132px; overflow:hidden; text-overflow:ellipsis; }
+            .topbar-btn { width:44px; height:44px; }
+            .content-wrap { margin-left:0; }
+            /* Jetstream's stock navigation bar is rendered in flow but sits under the fixed top bar; on phones it only adds dead space. */
+            nav[wire\:id] { display:none; }
+            .table-scroll > table { min-width:560px; }
+            .page-pad { padding:1.25rem 1rem 2rem !important; }
+            .r-stack { grid-template-columns:minmax(0, 1fr) !important; }
+            .bell-panel { position:fixed !important; top:58px !important; left:8px !important; right:8px !important; width:auto !important; max-height:calc(100vh - 74px) !important; }
+            input.dot-input:not([type=checkbox]):not([type=radio]), select.dot-input, textarea.dot-input { font-size:16px !important; min-height:44px; }
+        }
+        @media (max-width: 479.98px) {
+            .topbar-team, .topbar-profile { display:none; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .sidebar, .shell-backdrop { transition:none !important; }
+        }
     </style>
     @livewireStyles
     <script defer src="https://unpkg.com/alpinejs@3.10.2/dist/cdn.min.js"></script>
@@ -127,7 +161,7 @@
 <body>
     <x-banner />
 
-    <aside class="sidebar">
+    <aside id="app-sidebar" class="sidebar" data-shell-drawer aria-label="Sidebar">
         <div class="sidebar-brand">
             <!-- TODO(branding): placeholder Dot.Billing mark — replace with the official ecosystem-issued logo once one exists (see wiki.md §8 roadmap). -->
             <div class="brand-icon">
@@ -143,6 +177,9 @@
                     <span class="brand-subtitle">Billing Intelligence</span>
                 </div>
             </div>
+            <button type="button" class="shell-close" data-shell-close aria-label="Close menu">
+                <span class="material-symbols-rounded" aria-hidden="true">close</span>
+            </button>
         </div>
 
         <div class="sidebar-divider"></div>
@@ -191,7 +228,13 @@
         @endauth
     </aside>
 
+    <div class="shell-backdrop" data-shell-backdrop aria-hidden="true"></div>
+
     <header class="topbar">
+        <button type="button" class="shell-menu" data-shell-menu aria-controls="app-sidebar" aria-expanded="false">
+            <span class="material-symbols-rounded" aria-hidden="true">menu</span>
+            <span>Menu</span>
+        </button>
         <div class="topbar-title">
             @isset($header){{ $header }}
             @else
@@ -210,7 +253,7 @@
         >
             <span class="material-symbols-rounded">dark_mode</span>
         </button>
-        <a href="{{ route('profile.show') }}" class="topbar-btn" title="Profile">
+        <a href="{{ route('profile.show') }}" class="topbar-btn topbar-profile" title="Profile">
             <span class="material-symbols-rounded">account_circle</span>
         </a>
     </header>
@@ -222,6 +265,45 @@
     </div>
 
     @stack('modals')
+    <script>
+        // Responsive shell: open/close the off-canvas drawer below 860px. Plain script on purpose: this layout
+        // ends up with two Alpine instances (CDN + Livewire's bundle), so Alpine state would be unreliable here.
+        (function () {
+            var btn = document.querySelector('[data-shell-menu]');
+            var drawer = document.getElementById('app-sidebar');
+            var backdrop = document.querySelector('[data-shell-backdrop]');
+            var closeBtn = document.querySelector('[data-shell-close]');
+            if (!btn || !drawer || !backdrop || !closeBtn) return;
+            var mq = window.matchMedia('(max-width: 859.98px)');
+            var root = document.documentElement;
+            function isOpen() { return drawer.classList.contains('is-open'); }
+            function setOpen(open, returnFocus) {
+                if (open && !mq.matches) return;
+                drawer.classList.toggle('is-open', open);
+                backdrop.classList.toggle('is-open', open);
+                root.classList.toggle('shell-locked', open);
+                btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+                if (open) closeBtn.focus();
+                else if (returnFocus) btn.focus();
+            }
+            btn.addEventListener('click', function () { setOpen(!isOpen(), true); });
+            closeBtn.addEventListener('click', function () { setOpen(false, true); });
+            backdrop.addEventListener('click', function () { setOpen(false, true); });
+            document.addEventListener('keydown', function (e) {
+                if (!isOpen()) return;
+                if (e.key === 'Escape') { setOpen(false, true); return; }
+                if (e.key !== 'Tab') return;
+                var f = drawer.querySelectorAll('a[href], button:not([disabled])');
+                if (!f.length) return;
+                var first = f[0], last = f[f.length - 1];
+                if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+                else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+            });
+            var onChange = function () { if (!mq.matches && isOpen()) setOpen(false, false); };
+            if (mq.addEventListener) mq.addEventListener('change', onChange); else mq.addListener(onChange);
+            window.addEventListener('pagehide', function () { setOpen(false, false); });
+        })();
+    </script>
     @livewireScripts
 </body>
 </html>

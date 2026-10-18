@@ -1,5 +1,5 @@
 <x-app-layout>
-<div style="padding:2rem 2.5rem 3rem;">
+<div class="page-pad" style="padding:2rem 2.5rem 3rem;">
     <h1 style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700;color:#f4f4f5;margin:0 0 0.4rem;letter-spacing:-0.01em;">Entitlement lookup</h1>
     <p class="dot-muted" style="margin:0 0 1.5rem;max-width:46rem;">Shows what <span style="font-family:'JetBrains Mono',monospace;">GET /api/entitlements/{company_uuid}</span> returns for a company id, as the other Dot apps see it. Read only.</p>
 
