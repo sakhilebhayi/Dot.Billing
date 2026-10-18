@@ -1,5 +1,5 @@
 <x-app-layout>
-<div style="padding:2rem 2.5rem 3rem;">
+<div class="page-pad" style="padding:2rem 2.5rem 3rem;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
         <div>
             <h1 style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700;color:#f4f4f5;margin:0 0 0.2rem;letter-spacing:-0.01em;">Billing Dashboard</h1>
@@ -34,7 +34,7 @@
     <div style="margin-top:1.25rem;">
         <livewire:billing.payment-reliability />
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-top:1.25rem;">
+    <div class="r-stack" style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-top:1.25rem;">
         <livewire:billing.invoice-table />
         <livewire:billing.usage-dashboard />
     </div>
