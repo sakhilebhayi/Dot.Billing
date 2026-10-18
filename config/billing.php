@@ -1,5 +1,9 @@
 <?php
 
+// Platform keys come from the shared ecosystem registry, so a new Dot app only needs
+// BILLING_ENTITLEMENT_SECRET_<KEY> in .env to be able to call the entitlements API.
+$platformKeys = array_keys((require __DIR__.'/ecosystem.php')['platforms']);
+
 /*
 |--------------------------------------------------------------------------
 | Dot.Billing settings
@@ -33,6 +37,22 @@ return [
         'address' => array_values(array_filter(array_map('trim', explode('|', (string) env('BILLING_ISSUER_ADDRESS', ''))))),
         'tax_number' => env('BILLING_ISSUER_TAX_NUMBER'),
         'email' => env('BILLING_ISSUER_EMAIL'),
+    ],
+
+    'entitlements' => [
+        /*
+        | GET /api/entitlements/{company_uuid} is server to server. The CALLING platform signs
+        | "{timestamp}.{raw body}" (the body is empty for a GET) with HMAC-SHA256 using its own
+        | secret and names itself in X-InfoDot-Platform; Billing verifies. A blank secret means
+        | that platform cannot call at all. Generate with:
+        |     php -r 'echo bin2hex(random_bytes(32));'
+        */
+        'secrets' => collect($platformKeys)
+            ->mapWithKeys(fn (string $key) => [$key => (string) env('BILLING_ENTITLEMENT_SECRET_'.strtoupper($key), '')])
+            ->all(),
+
+        // Seconds a signed timestamp stays valid either side of "now".
+        'tolerance' => 300,
     ],
 
     // What the entitlements API reports for a company that has no live subscription.

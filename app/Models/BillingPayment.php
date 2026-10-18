@@ -7,6 +7,7 @@ use App\Models\Concerns\SyncsLegacyDecimals;
 use App\Support\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class BillingPayment extends Model
 {
@@ -42,6 +43,11 @@ class BillingPayment extends Model
     public function amountMoney(): Money
     {
         return new Money((int) $this->amount_cents, $this->currency);
+    }
+
+    public function event(): HasOne
+    {
+        return $this->hasOne(PaymentEvent::class, 'payment_id');
     }
 
     public function succeeded(): bool

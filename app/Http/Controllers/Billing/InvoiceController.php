@@ -22,7 +22,7 @@ class InvoiceController extends Controller
     {
         Gate::authorize('view', $invoice);
 
-        $invoice->load(['items', 'team']);
+        $invoice->load(['items', 'team', 'payments.event']);
 
         return view('invoices.show', [
             'invoice' => $invoice,

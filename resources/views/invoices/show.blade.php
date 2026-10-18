@@ -73,5 +73,31 @@
             <div class="k" style="text-align:right;padding-right:1.5rem;">Balance due</div><div class="v" style="font-weight:700;">{{ $invoice->status === 'void' ? '—' : $invoice->balanceMoney()->format() }}</div>
         </div>
     </div>
+
+    @if($invoice->payments->isNotEmpty())
+        <div class="dot-card" style="padding:1.5rem;margin-bottom:1.25rem;">
+            <h3 class="dot-h" style="margin-bottom:1rem;">Payments</h3>
+            <div class="table-scroll">
+                <table class="dot-table">
+                    <thead><tr><th>Received</th><th>Method</th><th>Reference</th><th>Status</th><th class="num">Amount</th></tr></thead>
+                    <tbody>
+                    @foreach($invoice->payments->sortBy('id') as $payment)
+                        <tr>
+                            <td class="dot-muted">{{ ($payment->processed_at ?? $payment->created_at)->format('j M Y') }}</td>
+                            <td>{{ \App\Livewire\Billing\RecordPaymentForm::METHODS[$payment->method] ?? ucfirst(str_replace('_', ' ', (string) $payment->method)) }}</td>
+                            <td class="dot-muted">{{ $payment->event?->payload['reference'] ?? ($payment->event?->provider && $payment->event->provider !== 'manual' ? $payment->event->provider.' '.$payment->event->external_id : '—') }}</td>
+                            <td><span class="pill {{ $payment->status === 'succeeded' ? 'paid' : 'overdue' }}">{{ ucfirst($payment->status) }}</span></td>
+                            <td class="num">{{ $payment->amountMoney()->format() }}</td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
+    @if($canManage && $invoice->status === 'open')
+        <livewire:billing.record-payment-form :invoice="$invoice" />
+    @endif
 </div>
 </x-app-layout>

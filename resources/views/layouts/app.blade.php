@@ -162,6 +162,10 @@
                 <span class="material-symbols-rounded nav-icon">inventory_2</span>
                 Plan catalogue
             </a>
+            <a href="{{ route('operator.entitlements.index') }}" class="nav-item {{ request()->routeIs('operator.entitlements.*') ? 'active' : '' }}">
+                <span class="material-symbols-rounded nav-icon">key</span>
+                Entitlement lookup
+            </a>
             <a href="{{ route('operator.dunning-cases.index') }}" class="nav-item {{ request()->routeIs('operator.dunning-cases.*') ? 'active' : '' }}">
                 <span class="material-symbols-rounded nav-icon">gavel</span>
                 Dunning cases

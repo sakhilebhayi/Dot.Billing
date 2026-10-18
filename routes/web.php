@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\EcosystemAuthController;
 use App\Http\Controllers\Billing\DashboardController;
+use App\Http\Controllers\Billing\EntitlementLookupController;
 use App\Http\Controllers\Billing\InvoiceController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -36,5 +37,6 @@ Route::middleware([
     Route::middleware('operator')->prefix('operator')->name('operator.')->group(function () {
         Route::get('/dunning-cases', fn () => view('operator.dunning-cases'))->name('dunning-cases.index');
         Route::get('/plans', fn () => view('operator.plans'))->name('plans.index');
+        Route::get('/entitlements', EntitlementLookupController::class)->name('entitlements.index');
     });
 });

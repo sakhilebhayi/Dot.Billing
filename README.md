@@ -72,6 +72,44 @@ and the free-tier limits.
 **Roles.** Owner and `admin` manage billing. `editor` and the read-only `viewer` role can read invoices and the
 subscription state. A draft invoice is visible only to managers.
 
+**Recording payments** (`App\Services\Billing\RecordPayment`). The one entry for money arriving. It applies a
+payment to an invoice inside a transaction with the invoice locked: partial payments are allowed, an overpayment
+or a wrong currency is rejected, only an `open` invoice can be paid, and the invoice becomes `paid` when the
+balance reaches zero. Every fact is stored in `payment_events` (provider and external id nullable;
+`unique(provider, external_id)` so a replayed provider event is a no-op, and the same id with different details
+is a `payment_conflict`). The stored payload has secrets scrubbed. Owners and admins can use "Record a manual
+payment" on an open invoice; it is logged with their name. Only payments exist: refunds are not modelled.
+
+### Where a payment provider plugs in
+
+No provider SDK, webhook endpoint or card handling exists in this app, by design. When a provider is chosen,
+its adapter is a thin layer that (1) exposes its own webhook route and verifies that provider's signature,
+(2) maps the event to an open invoice (by invoice number or metadata), and (3) calls
+`RecordPayment::apply($invoice, new Money($cents, $currency), provider: 'name', externalId: $eventId, method:
+'card', payload: $event)`. Idempotency, partial payments, status changes and the audit row come with that call.
+Subscription renewals need no provider: `billing:advance-subscriptions` and `billing:generate-invoices` already
+raise the invoices an adapter would collect. The unused `stripe_*` columns can be dropped or reused then.
+
+### Entitlements API
+
+`GET /api/entitlements/{company_uuid}` tells another Dot app what a company is on. `company_uuid` is InfoDot's
+company id, matched to `teams.infodot_team_uuid`. Server to server only, signed like InfoDot's other calls:
+
+| Header | Value |
+|---|---|
+| `X-InfoDot-Platform` | the calling platform's key, e.g. `files` |
+| `X-InfoDot-Timestamp` | unix time, accepted within 5 minutes either way |
+| `X-InfoDot-Signature` | `sha256=` + HMAC-SHA256 hex of `"{timestamp}.{raw body}"` (the body of a GET is empty) |
+
+Each platform has its own secret in `BILLING_ENTITLEMENT_SECRET_<KEY>` (a blank secret means that platform cannot
+call). Bad or stale signatures, unknown platforms and blank secrets all return the same `401`; an unknown company
+is a generic `404`, and only after authentication. The response carries `status` (`active`, `trialing`,
+`past_due`, `canceled`, `none`), the plan, `seat_limit` and `storage_gb` (`null` = unlimited), `features`,
+`period_end` and `cancel_at_period_end`, with an `ETag`. A company with no live subscription gets the free-tier
+limits from `config/billing.php` (placeholders: set `BILLING_FREE_SEAT_LIMIT` and `BILLING_FREE_STORAGE_GB`).
+`past_due` keeps the plan's limits; whether to restrict is the consuming app's decision. The signature does not
+cover the URL (the scheme's known limit). Operators can check any company at `/operator/entitlements`.
+
 ## Tech Stack
 
 | Layer | Technology |
