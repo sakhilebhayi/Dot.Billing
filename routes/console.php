@@ -2,6 +2,7 @@
 
 use App\Console\Commands\AdvanceSubscriptions;
 use App\Console\Commands\GenerateInvoices;
+use App\Console\Commands\PublishMetrics;
 use App\Console\Commands\ScanBillingAlerts;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -28,5 +29,13 @@ Schedule::command(AdvanceSubscriptions::class)
 
 Schedule::command(GenerateInvoices::class)
     ->dailyAt('01:30')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Daily aggregate snapshot for Dot.Analytics, after the clock above has rolled and invoiced the day. Queued per
+// company; sends nothing until ANALYTICS_INGEST_URL and ANALYTICS_INGEST_SECRET are set. Needs a queue worker.
+Schedule::command(PublishMetrics::class)
+    ->dailyAt('03:00')
+    ->timezone('UTC')
     ->withoutOverlapping()
     ->onOneServer();
