@@ -65,6 +65,19 @@ return [
         'timeout' => 5,
     ],
 
+    // A daily aggregate snapshot (counts and whole-cent sums only) is published to Dot.Analytics' S2S ingest
+    // (POST /api/ingest/snapshots, queued). Both the URL and the secret must be set or nothing is sent. The
+    // secret is this platform's ANALYTICS_INGEST_SECRET_BILLING value from Dot.Analytics' .env. The breaker
+    // stops calling an Analytics that fails `breaker_threshold` times in a row, for `breaker_cooldown` seconds.
+    'analytics' => [
+        'url' => env('ANALYTICS_INGEST_URL'),
+        'secret' => env('ANALYTICS_INGEST_SECRET'),
+        'platform' => env('ANALYTICS_PLATFORM_KEY', 'billing'),
+        'timeout' => 5,
+        'breaker_threshold' => 5,
+        'breaker_cooldown' => 300,
+    ],
+
     // What the entitlements API reports for a company that has no live subscription.
     // These are placeholders until the owner decides the free tier: set them per environment.
     'free_tier' => [

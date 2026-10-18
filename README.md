@@ -134,6 +134,36 @@ the caller, and disabled when `NOTIFY_INGEST_URL` or `NOTIFY_INGEST_SECRET` is b
 HMAC-SHA256 over `"{timestamp}.{raw body}"`; the idempotency key is event + invoice id + date. The team must be
 linked to InfoDot (`teams.infodot_team_uuid`) or there is nobody to address and the reminder is skipped.
 
+**Metrics for Dot.Analytics.** Once a day (03:00 UTC, `billing:publish-metrics`) this app queues one signed snapshot
+per company to Dot.Analytics' server-to-server ingest (`POST /api/ingest/snapshots`) through
+`App\Services\Analytics\AnalyticsClient` and `App\Jobs\SendAnalyticsSnapshot`. A company is a non-personal team
+linked to InfoDot (`teams.infodot_team_uuid`); personal and unlinked teams are skipped.
+
+What is sent, and nothing else (Dot.Analytics' `billing` catalogue; counts and whole-cent sums only, never a name,
+email, invoice number or row):
+
+| Key | Meaning |
+|---|---|
+| `mrr_cents` | monthly recurring revenue: active and past_due subscriptions at their plan price, annual plans divided by 12 and rounded half up once. Trials are not revenue and are not counted |
+| `open_invoices` | invoices with status `open` |
+| `overdue_invoices` | open invoices past their due date and outside a grace period (the app's own overdue rule) |
+| `overdue_cents` | the balance still owed on those invoices |
+| `currency` | ISO 4217 code of the two `*_cents` keys |
+
+A snapshot carries one currency. A company whose money is in more than one currency has `mrr_cents`,
+`overdue_cents` and `currency` left out (with a logged warning) rather than summed or guessed; a company with no
+subscriptions and no invoices has no currency to report in, so they are left out too. The snapshot is stamped
+with `taken_at` = the start of the UTC day, so a retry or a second run the same day is the same snapshot upstream
+(Dot.Analytics keeps the first one it received for a day).
+
+Nothing is sent until `ANALYTICS_INGEST_URL` (the full URL ending `/api/ingest/snapshots`) **and**
+`ANALYTICS_INGEST_SECRET` are set; the secret is the same value as `ANALYTICS_INGEST_SECRET_BILLING` in
+Dot.Analytics' `.env`. Requests are HMAC-SHA256 signed over `"{timestamp}.{raw body}"` at send time, time out after
+5 seconds, are retried up to 3 times with backoff, never throw into the app, and stop for 5 minutes (circuit
+breaker) after 5 failures in a row, so an Analytics outage or a wrong URL cannot affect Billing. This needs the
+scheduler (`* * * * * php artisan schedule:run`) and a queue worker (`php artisan queue:work`). Try it safely with
+`php artisan billing:publish-metrics --dry-run` (prints the payloads, sends nothing) and `--company=<uuid>`.
+
 **Safety.** Financial foreign keys are `RESTRICT` on PostgreSQL and MySQL, so a team's subscriptions, invoices,
 payments and dunning history cannot be destroyed by deleting the team; the app refuses first with a message. This
 means a team (and an account that owns one) with billing history cannot be deleted: retention over erasure,
@@ -156,6 +186,7 @@ nothing; there is no fallback copy. Viewers cannot trigger it.
 | `BILLING_FREE_SEAT_LIMIT`, `BILLING_FREE_STORAGE_GB` | entitlements for a company with no live subscription (placeholders) |
 | `BILLING_ENTITLEMENT_SECRET_<KEY>` | per-platform secret for the entitlements API; blank = that platform cannot call |
 | `NOTIFY_INGEST_URL`, `NOTIFY_INGEST_SECRET` | Dot.Notify ingest endpoint and this app's signing secret; blank disables reminders |
+| `ANALYTICS_INGEST_URL`, `ANALYTICS_INGEST_SECRET`, `ANALYTICS_PLATFORM_KEY` | Dot.Analytics snapshot endpoint, shared signing secret, platform key (default `billing`); blank URL or secret disables publishing |
 
 ## Tech Stack
 
