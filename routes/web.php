@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use Laravel\Jetstream\Jetstream;
 
 Route::get('/auth/ecosystem', [EcosystemAuthController::class, 'handle'])
+    ->middleware('throttle:10,1')
     ->name('ecosystem.auth');
 
 Route::get('/', fn () => view('welcome'));
