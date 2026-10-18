@@ -9,12 +9,19 @@ class DunningCase extends Model
 {
     protected $fillable = [
         'team_id', 'invoice_id', 'payment_id', 'reason', 'status',
-        'resolved_at', 'resolved_by', 'resolution_notes',
+        'resolved_at', 'resolved_by', 'resolution_notes', 'grace_until',
     ];
 
     protected $casts = [
         'resolved_at' => 'datetime',
+        'grace_until' => 'datetime',
     ];
+
+    /**
+     * open: needs a person. grace: a person granted time (grace_until); the scanner reopens it after that,
+     * never before. canceled / dismissed / resolved are final; "extended" exists only on legacy rows.
+     */
+    public const WORKING_STATUSES = ['open', 'grace'];
 
     public function team(): BelongsTo
     {

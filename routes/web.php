@@ -1,15 +1,15 @@
 <?php
 
 use App\Http\Controllers\Auth\EcosystemAuthController;
+use App\Http\Controllers\Billing\DashboardController;
+use App\Http\Controllers\Billing\EntitlementLookupController;
 use App\Http\Controllers\Billing\InvoiceController;
-use App\Models\BillingAlert;
-use App\Models\BillingInvoice;
-use App\Models\BillingSubscription;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Laravel\Jetstream\Jetstream;
 
 Route::get('/auth/ecosystem', [EcosystemAuthController::class, 'handle'])
+    ->middleware('throttle:10,1')
     ->name('ecosystem.auth');
 
 Route::get('/', fn () => view('welcome'));
@@ -28,21 +28,15 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
-    Route::get('/dashboard', function () {
-        // team scoping now comes from each model's HasTeamScope global scope
-        $subscription = BillingSubscription::with('plan')->first();
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
-        return view('dashboard', [
-            'planName' => $subscription?->plan?->name ?? 'No Plan',
-            'openInvoices' => BillingInvoice::where('status', 'open')->count(),
-            'totalPaidYtd' => BillingInvoice::where('status', 'paid')->whereYear('paid_at', now()->year)->sum('total'),
-            'activeAlerts' => BillingAlert::where('status', 'active')->count(),
-        ]);
-    })->name('dashboard');
-
+    Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
     Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
+    Route::get('/invoices/{invoice}/print', [InvoiceController::class, 'print'])->name('invoices.print');
 
     Route::middleware('operator')->prefix('operator')->name('operator.')->group(function () {
         Route::get('/dunning-cases', fn () => view('operator.dunning-cases'))->name('dunning-cases.index');
+        Route::get('/plans', fn () => view('operator.plans'))->name('plans.index');
+        Route::get('/entitlements', EntitlementLookupController::class)->name('entitlements.index');
     });
 });

@@ -3,6 +3,8 @@
 namespace App\Livewire\Billing;
 
 use App\Models\BillingInvoice;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -26,13 +28,24 @@ class InvoiceTable extends Component
     }
 
     #[Computed]
+    public function canSeeDrafts(): bool
+    {
+        $team = Auth::user()?->currentTeam;
+
+        return $team !== null && Gate::allows('manage-billing', $team);
+    }
+
+    #[Computed]
     public function invoices()
     {
-        // team scoping now comes from BillingInvoice's HasTeamScope global scope
+        // team scoping comes from BillingInvoice's HasTeamScope global scope
         return BillingInvoice::query()
-            ->when($this->filterStatus, fn ($q) => $q->where('status', $this->filterStatus))
+            // A draft is internal until finalized; only managers see it.
+            ->unless($this->canSeeDrafts, fn ($q) => $q->where('status', '!=', 'draft'))
+            ->when($this->filterStatus === 'overdue', fn ($q) => $q->overdue())
+            ->when($this->filterStatus && $this->filterStatus !== 'overdue', fn ($q) => $q->where('status', $this->filterStatus))
             ->when($this->search, fn ($q) => $q->where('invoice_number', 'like', '%'.$this->search.'%'))
-            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->paginate(10);
     }
 

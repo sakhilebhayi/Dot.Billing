@@ -26,6 +26,8 @@
 
             <x-slot name="content">
                 {{ __('Are you sure you want to delete this team? Once a team is deleted, all of its resources and data will be permanently deleted.') }}
+
+                <x-input-error for="team" class="mt-2" />
             </x-slot>
 
             <x-slot name="footer">

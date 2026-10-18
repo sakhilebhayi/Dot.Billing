@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\HasTeamScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BillingSubscription extends Model
 {
@@ -12,10 +13,14 @@ class BillingSubscription extends Model
 
     protected $table = 'billing_subscriptions';
 
+    /** A team may hold at most one subscription in these statuses (see the partial unique index). */
+    public const LIVE_STATUSES = ['active', 'trialing', 'past_due'];
+
     protected $fillable = [
         'team_id', 'plan_id', 'status', 'billing_cycle',
         'trial_ends_at', 'current_period_start', 'current_period_end',
-        'canceled_at', 'stripe_subscription_id',
+        'canceled_at', 'ended_at', 'cancel_at_period_end',
+        'pending_plan_id', 'pending_billing_cycle', 'stripe_subscription_id',
     ];
 
     protected $casts = [
@@ -23,6 +28,8 @@ class BillingSubscription extends Model
         'current_period_start' => 'datetime',
         'current_period_end' => 'datetime',
         'canceled_at' => 'datetime',
+        'ended_at' => 'datetime',
+        'cancel_at_period_end' => 'boolean',
     ];
 
     public function team(): BelongsTo
@@ -33,6 +40,21 @@ class BillingSubscription extends Model
     public function plan(): BelongsTo
     {
         return $this->belongsTo(BillingPlan::class, 'plan_id');
+    }
+
+    public function pendingPlan(): BelongsTo
+    {
+        return $this->belongsTo(BillingPlan::class, 'pending_plan_id');
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(BillingInvoice::class, 'subscription_id');
+    }
+
+    public function isLive(): bool
+    {
+        return in_array($this->status, self::LIVE_STATUSES, true);
     }
 
     public function isActive(): bool

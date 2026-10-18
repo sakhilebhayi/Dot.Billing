@@ -6,6 +6,7 @@ use App\Models\BillingUsageRecord;
 use App\Models\Team;
 use App\Services\AiBillingService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
@@ -13,7 +14,14 @@ class UsageDashboard extends Component
 {
     public string $selectedPeriod = 'this_month';
 
+    /** @var list<string> */
     public array $aiInsights = [];
+
+    /** An analysis was attempted and could not be produced: show that, never filler. */
+    public bool $aiUnavailable = false;
+
+    /** There was no usage to analyse, so no call was made. */
+    public bool $aiNothingToAnalyse = false;
 
     /**
      * A user removed from their last team (or never assigned one) has a
@@ -50,6 +58,14 @@ class UsageDashboard extends Component
             ->toArray();
     }
 
+    #[Computed]
+    public function canRunAnalysis(): bool
+    {
+        $team = $this->resolveCurrentTeam();
+
+        return $team !== null && Gate::allows('run-ai-analysis', $team);
+    }
+
     public function analyzeSpend(): void
     {
         $team = $this->resolveCurrentTeam();
@@ -58,8 +74,27 @@ class UsageDashboard extends Component
             abort(403, 'No active team selected.');
         }
 
-        $service = new AiBillingService;
-        $result = $service->analyzeSpend($team, $this->usageByPlatform);
+        // Each call costs money: owners, admins and editors only, never a read-only viewer.
+        Gate::authorize('run-ai-analysis', $team);
+
+        $this->aiInsights = [];
+        $this->aiUnavailable = false;
+        $this->aiNothingToAnalyse = false;
+
+        if (empty($this->usageByPlatform)) {
+            $this->aiNothingToAnalyse = true;
+
+            return;
+        }
+
+        $result = (new AiBillingService)->analyzeSpend($team, $this->usageByPlatform);
+
+        if ($result === null) {
+            $this->aiUnavailable = true;
+
+            return;
+        }
+
         $this->aiInsights = $result['insights'];
     }
 

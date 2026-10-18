@@ -50,12 +50,16 @@ class JetstreamServiceProvider extends ServiceProvider
             'read',
             'update',
             'delete',
-        ])->description('Administrator users can perform any action.');
+        ])->description('Administrators can manage billing: plans, payments and the subscription.');
 
         Jetstream::role('editor', 'Editor', [
             'read',
             'create',
             'update',
-        ])->description('Editor users have the ability to read, create, and update.');
+        ])->description('Editors can read and update team data. They can read invoices but cannot manage billing.');
+
+        Jetstream::role('viewer', 'Viewer', [
+            'read',
+        ])->description('Viewers can read invoices and subscription state. They cannot change billing or run AI analysis.');
     }
 }

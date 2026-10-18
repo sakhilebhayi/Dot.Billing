@@ -28,10 +28,16 @@ class BillingInvoicePolicy
     }
 
     /**
-     * Determine whether the user can view the given invoice.
+     * Determine whether the user can view the given invoice: any member of its team, except that
+     * a draft is visible only to those who can manage billing.
      */
     public function view(User $user, BillingInvoice $invoice): bool
     {
-        return $user->belongsToTeam($invoice->team);
+        if (! $user->belongsToTeam($invoice->team)) {
+            return false;
+        }
+
+        // A draft is internal until someone finalizes it; only managers see it.
+        return $invoice->status !== 'draft' || $user->can('manage-billing', $invoice->team);
     }
 }
