@@ -3,8 +3,12 @@
 namespace Tests\Feature;
 
 use App\Livewire\NotificationBell;
+use App\Models\Team;
 use App\Models\User;
+use DOMDocument;
+use DOMXPath;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Concerns\BillingFixtures;
@@ -115,5 +119,125 @@ class ResponsiveShellTest extends TestCase
         Livewire::actingAs($user)->test(NotificationBell::class)
             ->call('toggle')
             ->assertSeeHtml('class="bell-panel"');
+    }
+
+    private const ACCOUNT_SECTION = '//aside[@id="app-sidebar"]//div[contains(@class,"shell-account")]';
+
+    private function accountXpath(string $html): DOMXPath
+    {
+        $dom = new DOMDocument;
+        libxml_use_internal_errors(true);
+        $dom->loadHTML($html);
+        libxml_clear_errors();
+
+        return new DOMXPath($dom);
+    }
+
+    private function dashboardHtmlFor(User $user): string
+    {
+        return $this->actingAs($user->fresh())->get(route('dashboard'))->assertOk()->getContent();
+    }
+
+    public function test_the_sidebar_account_section_carries_team_settings_create_team_and_log_out(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $team = $user->currentTeam;
+
+        $xpath = $this->accountXpath($this->dashboardHtmlFor($user));
+        $account = self::ACCOUNT_SECTION;
+
+        $this->assertSame(1, $xpath->query($account)->length, 'The account section lives inside the sidebar drawer');
+        $this->assertStringContainsString($team->name, $xpath->query($account.'//summary')->item(0)?->textContent ?? '', 'The current team is named in the account section');
+        $this->assertSame(1, $xpath->query($account.'//a[@href="'.route('teams.show', $team->id).'"][span[@class="team-label"][normalize-space()="Team settings"]]')->length);
+        $this->assertSame(1, $xpath->query($account.'//a[@href="'.route('teams.create').'"][span[@class="team-label"][normalize-space()="Create new team"]]')->length);
+
+        $logout = $xpath->query($account.'//form[@method="POST"][@action="'.route('logout').'"]');
+        $this->assertSame(1, $logout->length, 'Log out is a POST form');
+        $this->assertSame(1, $xpath->query('.//input[@name="_token"]', $logout->item(0))->length);
+        $this->assertSame(1, $xpath->query('.//button[@type="submit"][span[@class="team-label"][normalize-space()="Log out"]]', $logout->item(0))->length);
+        $this->assertSame(0, $xpath->query('//a[@href="'.route('logout').'"]')->length, 'There is no GET logout link');
+    }
+
+    public function test_create_team_is_left_out_when_the_user_may_not_create_one(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        Gate::before(fn ($authUser, $ability, $arguments) => $ability === 'create' && ($arguments[0] ?? null) instanceof Team ? false : null);
+
+        $xpath = $this->accountXpath($this->dashboardHtmlFor($user));
+
+        $this->assertSame(1, $xpath->query(self::ACCOUNT_SECTION.'//a[@href="'.route('teams.show', $user->currentTeam->id).'"]')->length);
+        $this->assertSame(0, $xpath->query('//a[@href="'.route('teams.create').'"]')->length);
+    }
+
+    public function test_a_user_in_several_teams_gets_one_switch_form_per_team_with_the_current_one_marked(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $current = $user->currentTeam;
+        $other = Team::factory()->create(['user_id' => $user->id, 'name' => 'Second Account Team', 'personal_team' => false]);
+
+        $xpath = $this->accountXpath($this->dashboardHtmlFor($user));
+        $forms = $xpath->query(self::ACCOUNT_SECTION.'//form[@method="POST"][@action="'.route('current-team.update').'"]');
+
+        $this->assertSame(2, $forms->length, 'One switch form per team the user belongs to');
+        $this->assertSame(1, $xpath->query(self::ACCOUNT_SECTION.'//form[@action="'.route('current-team.update').'"][input[@name="_method"][@value="PUT"]][input[@name="_token"]][input[@name="team_id"][@value="'.$other->id.'"]]//button[@type="submit"][contains(.,"Second Account Team")][not(@aria-current)]')->length);
+        $this->assertSame(1, $xpath->query(self::ACCOUNT_SECTION.'//form[@action="'.route('current-team.update').'"][input[@name="team_id"][@value="'.$current->id.'"]]//button[@type="submit"][@aria-current="true"]')->length, 'The current team is marked');
+        $this->assertSame(1, $xpath->query(self::ACCOUNT_SECTION.'//*[normalize-space()="Switch teams"]')->length);
+    }
+
+    public function test_a_user_in_one_team_gets_no_switch_forms(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+
+        $xpath = $this->accountXpath($this->dashboardHtmlFor($user));
+
+        $this->assertSame(1, $xpath->query(self::ACCOUNT_SECTION)->length);
+        $this->assertSame(0, $xpath->query('//form[@action="'.route('current-team.update').'"]')->length);
+        $this->assertSame(0, $xpath->query(self::ACCOUNT_SECTION.'//*[normalize-space()="Switch teams"]')->length);
+    }
+
+    public function test_the_legacy_jetstream_bar_is_not_rendered_and_content_starts_under_the_fixed_top_bar(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+
+        $html = $this->dashboardHtmlFor($user);
+
+        $this->assertDoesNotMatchRegularExpression('/<nav\b[^>]*\bwire:id=/', $html, 'The stock Jetstream bar (a Livewire nav) must not render at any width');
+        $this->assertStringNotContainsString('Manage Account', $html, 'Text only the legacy bar rendered');
+        // Its 64px of flow height is gone: the content wrapper begins at the top bar height token.
+        $this->assertMatchesRegularExpression('/--topbar-h:\s*54px/', $html);
+        $this->assertMatchesRegularExpression('/\.topbar\s*\{[^}]*\bheight:\s*var\(--topbar-h\)/', $html);
+        $this->assertMatchesRegularExpression('/\.content-wrap\s*\{[^}]*\bpadding-top:\s*var\(--topbar-h\)/', $html);
+    }
+
+    public function test_no_css_rule_hides_the_account_section_at_any_width(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $html = $this->dashboardHtmlFor($user);
+
+        $this->assertSame(1, $this->accountXpath($html)->query(self::ACCOUNT_SECTION)->length);
+
+        preg_match_all('/<style\b[^>]*>(.*?)<\/style>/s', $html, $blocks);
+        $css = implode("\n", $blocks[1]);
+        $this->assertNotSame('', $css);
+
+        preg_match_all('/([^{}]+)\{([^{}]*)\}/', $css, $rules, PREG_SET_ORDER);
+        $checked = 0;
+        foreach ($rules as [, $selector, $declarations]) {
+            // The disclosure triangle of <details> is the one thing in there that is meant to be hidden.
+            if (preg_match('/shell-account|team-switch|logout-btn|team-row/', $selector) !== 1 || str_contains($selector, 'details-marker')) {
+                continue;
+            }
+            $checked++;
+            $this->assertDoesNotMatchRegularExpression('/display\s*:\s*none|visibility\s*:\s*hidden/', $declarations, 'A rule hides the account section: '.trim($selector));
+        }
+        $this->assertGreaterThan(0, $checked, 'The account section is styled by rules this guard can see');
+    }
+
+    public function test_the_drawer_focus_trap_skips_the_collapsed_team_list(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+
+        $this->assertStringContainsString('a[href], button:not([disabled]), summary', $this->dashboardHtmlFor($user));
+        $this->assertStringContainsString('offsetParent !== null', $this->dashboardHtmlFor($user));
     }
 }
