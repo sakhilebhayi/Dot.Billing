@@ -1,0 +1,133 @@
+name: Drift Report
+
+# Read-only. BEFORE the one-time takeover (deploy.yml, confirm=adopt), answer
+# the question nothing in the repo can: is the tree on the host a checkout of
+# origin/main, and if not, how far is it from main? The Dot.Files takeover
+# replaced 150 files; this shows that number first, with the paths, so nothing
+# is a surprise.
+#
+# The runner hashes every tracked file of main (sha256) and sends only that
+# list of hashes to the host over ssh; the host hashes ITS copy of the same
+# paths and reports counts. Nothing is changed on the host and no file
+# content or secret ever leaves it: only counts and paths are printed.
+# Untracked host files (.env, storage/, vendor/, uploads) are not compared.
+#
+# Secrets: DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS,
+# optionally DEPLOY_PATH (the app directory; found automatically when unset).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    name: Compare the host tree with main
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Locate the app on the host
+        # DEPLOY_PATH is optional. Without it the app is found as the single
+        # `artisan` within two levels of the docroot ~/<DEPLOY_HOST>; zero or
+        # several is an error, not a guess.
+        run: |
+          APP="${{ secrets.DEPLOY_PATH }}"
+          if [ -z "$APP" ]; then
+            APP="$(ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
+                "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+                SITE="${{ secrets.DEPLOY_HOST }}" \
+                'bash -s' <<'FIND'
+          set -euo pipefail
+          D="$HOME/$SITE"
+          A="$(find "$D" -maxdepth 2 -name artisan -type f -exec dirname {} \; | sort -u)"
+          if [ "$(printf '%s\n' "$A" | grep -c .)" != 1 ]; then
+            echo "expected exactly one Laravel app under the docroot, found: ${A:-none}" >&2
+            exit 1
+          fi
+          printf '%s\n' "$A"
+          FIND
+            )"
+          fi
+          echo "APP_PATH=$APP" >> "$GITHUB_ENV"
+          echo "App directory: ${APP#/home/}"
+
+      - name: Hash main and compare with the host
+        run: |
+          set -euo pipefail
+          # LC_ALL=C: a stable byte order so both sides sort identically.
+          git ls-files -z | grep -zv '^public/build/' | xargs -0 sha256sum | LC_ALL=C sort -k2 > "$RUNNER_TEMP/main.sha256"
+          echo "tracked files on main: $(wc -l < "$RUNNER_TEMP/main.sha256" | tr -d ' ')"
+
+          SSH='ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes'
+          DEST="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
+
+          # Single quotes on purpose: $HOME must expand on the host, not on the runner.
+          # shellcheck disable=SC2016
+          $SSH "$DEST" 'cat > "$HOME/.drift-main.sha256" && chmod 600 "$HOME/.drift-main.sha256"' < "$RUNNER_TEMP/main.sha256"
+
+          $SSH "$DEST" DEPLOY_PATH="$APP_PATH" 'bash -s' <<'DRIFT'
+          set -uo pipefail
+          cd "$DEPLOY_PATH" || { echo "::error::cannot enter the app directory"; exit 1; }
+          LIST="$HOME/.drift-main.sha256"
+          trap 'rm -f "$LIST"' EXIT
+          [ -s "$LIST" ] || { echo "::error::the hash list is missing or empty; refusing to report"; exit 1; }
+
+          echo "== host app directory: ${PWD#$HOME/}"
+          [ -d .git ] && echo "== it IS a git checkout (HEAD $(git rev-parse --short HEAD))" || echo "== it is NOT a git checkout (hand-uploaded)"
+
+          # sha256sum -c prints "path: OK", "path: FAILED" or, for a path the
+          # host does not have, "path: FAILED open or read".
+          sha256sum -c "$LIST" 2>&1 | grep -vE ': OK$' > "$HOME/.drift-result" || true
+          TOTAL="$(wc -l < "$LIST" | tr -d ' ')"
+          case "$TOTAL" in ''|*[!0-9]*) TOTAL=0 ;; esac
+          # An empty or truncated list would compare nothing and report
+          # "no drift": refuse it instead (a real tree has hundreds of files).
+          if [ "$TOTAL" -lt 20 ]; then
+            echo "::error::the hash list has only $TOTAL entries; refusing to report on it (the hashing step on the runner failed or was cut short)"
+            exit 1
+          fi
+          MISSING="$(grep -c 'FAILED open or read' "$HOME/.drift-result" || true)"
+          CHANGED="$(grep -c ': FAILED$' "$HOME/.drift-result" || true)"
+          SAME=$((TOTAL - MISSING - CHANGED))
+          echo
+          echo "== of $TOTAL tracked files on main:"
+          echo "   identical on the host : $SAME"
+          echo "   different on the host : $CHANGED"
+          echo "   absent on the host    : $MISSING"
+          echo
+          echo "== different (first 40):"
+          grep ': FAILED$' "$HOME/.drift-result" | sed 's/: FAILED$//' | head -40
+          echo "== absent (first 40):"
+          grep 'FAILED open or read' "$HOME/.drift-result" | sed 's/: FAILED open or read$//' | head -40
+          rm -f "$HOME/.drift-result"
+
+          # Files the host has that main does not, in the places that matter. The
+          # takeover keeps them (and moves host-only MIGRATIONS aside), but you
+          # should know they are there.
+          sed -E 's/^[0-9a-f]{64}[ *]{1,2}//' "$LIST" | LC_ALL=C sort > "$HOME/.drift-main-paths"
+          find app config routes database/migrations resources/views resources/js -type f 2>/dev/null | LC_ALL=C sort > "$HOME/.drift-host-paths"
+          HOSTONLY="$(comm -13 "$HOME/.drift-main-paths" "$HOME/.drift-host-paths" || true)"
+          rm -f "$HOME/.drift-main-paths" "$HOME/.drift-host-paths"
+          echo "== host-only files in app/, config/, routes/, database/migrations/, resources/ (not in main): $(printf '%s' "$HOSTONLY" | grep -c . || true)"
+          printf '%s\n' "$HOSTONLY" | grep . | head -40 || true
+          if printf '%s\n' "$HOSTONLY" | grep -q '^database/migrations/'; then
+            echo "== WARNING: host-only MIGRATION files exist. They would run beside main's own; the takeover moves them aside (deploy.yml prints where)."
+          fi
+          echo
+          if [ "$CHANGED" -eq 0 ] && [ "$MISSING" -eq 0 ]; then
+            echo "== VERDICT: the host already matches main exactly; taking over is a no-op for code."
+          elif [ $((CHANGED + MISSING)) -le 10 ]; then
+            echo "== VERDICT: small drift ($((CHANGED + MISSING)) files); review the paths above, then the takeover is low risk."
+          else
+            echo "== VERDICT: the host is OLDER or different from main in $((CHANGED + MISSING)) files; the takeover will replace them (a rollback tar is made first). Read the paths above before running it."
+          fi
+          DRIFT

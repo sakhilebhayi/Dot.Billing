@@ -20,6 +20,17 @@ trait BillingFixtures
         return User::factory()->withPersonalTeam()->create();
     }
 
+    /** A company: a non-personal team linked to an InfoDot company uuid (what Analytics publishing is about). */
+    protected function makeCompany(array $attributes = []): Team
+    {
+        $owner = User::factory()->create();
+        $team = Team::factory()->create(array_merge(['user_id' => $owner->id, 'personal_team' => false], $attributes));
+        $owner->forceFill(['current_team_id' => $team->id])->save();
+        $this->linkToInfoDot($team);
+
+        return $team->fresh();
+    }
+
     protected function makeMember(Team $team, string $role): User
     {
         $user = User::factory()->create();
