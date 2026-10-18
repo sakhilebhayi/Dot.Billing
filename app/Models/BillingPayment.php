@@ -3,22 +3,29 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasTeamScope;
+use App\Models\Concerns\SyncsLegacyDecimals;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BillingPayment extends Model
 {
     use HasTeamScope;
+    use SyncsLegacyDecimals;
 
     protected $table = 'billing_payments';
 
+    /** @var array<string, string> */
+    protected array $legacyDecimals = ['amount' => 'amount_cents'];
+
     protected $fillable = [
-        'team_id', 'invoice_id', 'amount', 'currency', 'status',
+        'team_id', 'invoice_id', 'amount', 'amount_cents', 'currency', 'status',
         'method', 'stripe_payment_id', 'failure_reason', 'processed_at',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'amount_cents' => 'integer',
         'processed_at' => 'datetime',
     ];
 
@@ -30,6 +37,11 @@ class BillingPayment extends Model
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(BillingInvoice::class);
+    }
+
+    public function amountMoney(): Money
+    {
+        return new Money((int) $this->amount_cents, $this->currency);
     }
 
     public function succeeded(): bool

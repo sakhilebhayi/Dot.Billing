@@ -49,9 +49,23 @@ class Team extends JetstreamTeam
         ];
     }
 
+    /** The team's most recent subscription, live or ended (what the billing panel describes). */
     public function subscription(): HasOne
     {
-        return $this->hasOne(BillingSubscription::class);
+        return $this->hasOne(BillingSubscription::class)->latestOfMany();
+    }
+
+    /** The one subscription that currently entitles the team, if any. */
+    public function liveSubscription(): HasOne
+    {
+        return $this->hasOne(BillingSubscription::class)
+            ->whereIn('status', BillingSubscription::LIVE_STATUSES)
+            ->latestOfMany();
+    }
+
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(BillingSubscription::class);
     }
 
     public function invoices(): HasMany

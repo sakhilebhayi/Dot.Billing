@@ -1,5 +1,7 @@
 <?php
 
+use App\Console\Commands\AdvanceSubscriptions;
+use App\Console\Commands\GenerateInvoices;
 use App\Console\Commands\ScanBillingAlerts;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -14,5 +16,17 @@ Artisan::command('inspire', function () {
 // docs/superpowers/specs/2026-08-09-billing-alerts-dunning-gate.md.
 Schedule::command(ScanBillingAlerts::class)
     ->everyFifteenMinutes()
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Subscription clock: roll periods and end trials first, then raise any invoice that is still missing.
+// Both are idempotent, so a missed day is caught up the next time they run.
+Schedule::command(AdvanceSubscriptions::class)
+    ->dailyAt('01:00')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+Schedule::command(GenerateInvoices::class)
+    ->dailyAt('01:30')
     ->withoutOverlapping()
     ->onOneServer();

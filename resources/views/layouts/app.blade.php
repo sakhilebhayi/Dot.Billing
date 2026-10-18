@@ -79,6 +79,47 @@
         .dot-loading-overlay { display:flex; align-items:center; justify-content:center; padding:2.5rem 0; }
         .dot-spin { animation: dot-spin 0.9s linear infinite; }
         @keyframes dot-spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+        /* Ruled tables and readouts: rows share edges instead of floating as cards. */
+        .table-scroll { overflow-x:auto; }
+        .dot-table { width:100%; border-collapse:collapse; font-size:12px; }
+        .dot-table th { text-align:left; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.09em; color:#71717a; padding:0 14px 8px 0; border-bottom:1px solid rgba(255,255,255,0.1); white-space:nowrap; }
+        .dot-table td { padding:10px 14px 10px 0; border-bottom:1px solid rgba(255,255,255,0.05); color:#d4d4d8; vertical-align:top; }
+        .dot-table tr:last-child td { border-bottom:none; }
+        .dot-table .num, .num { text-align:right; font-family:'JetBrains Mono',monospace; font-variant-numeric:tabular-nums; white-space:nowrap; }
+        .dot-table td:last-child, .dot-table th:last-child { padding-right:0; }
+        .dot-table a.row-link { color:#d4d4d8; text-decoration:none; font-family:'JetBrains Mono',monospace; font-weight:600; }
+        .dot-table a.row-link:hover { color:#818cf8; }
+        .dot-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.09em; color:#71717a; }
+        .dot-muted { color:#71717a; font-size:12px; }
+        .dot-h { font-family:'Syne',sans-serif; font-size:0.875rem; font-weight:700; color:#f4f4f5; margin:0; }
+        .readout { display:grid; grid-template-columns:minmax(9rem,14rem) 1fr; }
+        .readout > div { padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.06); }
+        .readout > div:nth-last-child(-n+2) { border-bottom:none; }
+        .readout .k { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.09em; color:#71717a; padding-top:4px; }
+        .readout .v { font-family:'JetBrains Mono',monospace; font-variant-numeric:tabular-nums; font-size:13px; color:#f4f4f5; display:flex; flex-wrap:wrap; gap:4px 18px; }
+        .readout .v .none { color:#71717a; font-family:'Inter',sans-serif; }
+        .state-line { font-size:13px; padding:12px 16px; border:1px solid rgba(255,255,255,0.08); border-radius:10px; background:#141416; color:#d4d4d8; display:flex; align-items:center; gap:10px; }
+        .state-line .dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; background:#52525b; }
+        .state-line.attn .dot { background:#f59e0b; }
+        .state-line.bad .dot { background:#ef4444; }
+        .state-line.ok .dot { background:#22c55e; }
+        .pill { display:inline-flex; align-items:center; padding:2px 8px; border-radius:100px; font-size:10px; font-weight:600; letter-spacing:0.02em; white-space:nowrap; background:rgba(255,255,255,0.06); color:#a1a1aa; }
+        .pill.paid { background:rgba(34,197,94,0.12); color:#22c55e; }
+        .pill.open { background:rgba(245,158,11,0.12); color:#f59e0b; }
+        .pill.overdue { background:rgba(239,68,68,0.12); color:#f87171; }
+        .pill.grace { background:rgba(129,140,248,0.14); color:#a5b4fc; }
+        .pill.void { text-decoration:line-through; }
+        .btn-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+        .dot-btn-danger { background:rgba(239,68,68,0.1); color:#f87171; border:1px solid rgba(239,68,68,0.28); }
+        .dot-btn-danger:hover { background:rgba(239,68,68,0.18); }
+        .dot-btn:focus-visible, .dot-input:focus-visible, a:focus-visible { outline:2px solid #818cf8; outline-offset:2px; }
+        .dot-btn[disabled] { opacity:0.5; cursor:not-allowed; }
+        .field-error { color:#f87171; font-size:11px; margin-top:4px; }
+        .notice { font-size:12px; color:#a5b4fc; margin-top:10px; }
+        .form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px 18px; }
+        .form-grid .wide { grid-column:1 / -1; }
+        .form-grid label { display:block; margin-bottom:5px; }
+        @media (max-width: 900px) { .readout { grid-template-columns:1fr; } .readout > div:nth-last-child(-n+2) { border-bottom:1px solid rgba(255,255,255,0.06); } .form-grid { grid-template-columns:1fr; } }
     </style>
     @livewireStyles
     <script defer src="https://unpkg.com/alpinejs@3.10.2/dist/cdn.min.js"></script>
@@ -111,6 +152,21 @@
                 <span class="material-symbols-rounded nav-icon">dashboard</span>
                 Dashboard
             </a>
+            <a href="{{ route('invoices.index') }}" class="nav-item {{ request()->routeIs('invoices.*') ? 'active' : '' }}">
+                <span class="material-symbols-rounded nav-icon">receipt_long</span>
+                Invoices
+            </a>
+            @if(Auth::user()?->is_platform_operator)
+            <div class="nav-section-label">Operator</div>
+            <a href="{{ route('operator.plans.index') }}" class="nav-item {{ request()->routeIs('operator.plans.*') ? 'active' : '' }}">
+                <span class="material-symbols-rounded nav-icon">inventory_2</span>
+                Plan catalogue
+            </a>
+            <a href="{{ route('operator.dunning-cases.index') }}" class="nav-item {{ request()->routeIs('operator.dunning-cases.*') ? 'active' : '' }}">
+                <span class="material-symbols-rounded nav-icon">gavel</span>
+                Dunning cases
+            </a>
+            @endif
             <div class="sidebar-divider" style="margin:10px 0;"></div>
             <a href="{{ route('profile.show') }}" class="nav-item {{ request()->routeIs('profile.show') ? 'active' : '' }}">
                 <span class="material-symbols-rounded nav-icon">manage_accounts</span>
