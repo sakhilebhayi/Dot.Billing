@@ -4,6 +4,8 @@ name: CI
 # PRs are covered) and on pushes to the trunk. The suite uses in-memory SQLite
 # from phpunit.xml and fakes Vite, so no database or asset build is needed.
 on:
+  # Called by deploy.yml as the release gate.
+  workflow_call: {}
   push:
     branches: [main]
   pull_request:
