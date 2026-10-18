@@ -47,6 +47,7 @@
             $discover = collect(config('ecosystem.platforms', []))
                 ->reject(fn ($p) => ($p['name'] ?? null) === $currentPlatformName)
                 ->reject(fn ($p) => ($p['active'] ?? true) === false)
+                ->reject(fn ($p, $k) => ($p['internal'] ?? false) === true || in_array($k, ['memory', 'brain', 'dopemine'], true))
                 ->values()
                 ->all();
 
