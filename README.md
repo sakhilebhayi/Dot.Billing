@@ -29,6 +29,7 @@ Dot.Billing is the subscription and billing management platform in the InfoDot e
 - An invoice engine: per-team sequential invoice numbers, snapshot line items, configurable tax and terms, a print-friendly invoice view
 - Money in integer minor units (cents); totals are always per currency, never summed across currencies
 - Invoice dashboard and search, and a per-invoice detail page
+- Pay an invoice online through Paystack (**test mode only**), with a signed webhook, server-side verification and an operator page for payment events that need a person
 - Usage records per platform (`billing_usage_records`)
 - Budget alerts (`billing_alerts`) and a human-gated dunning queue for operators
 - In-app notification bell (Laravel's `database` notification channel) for billing events
@@ -36,8 +37,9 @@ Dot.Billing is the subscription and billing management platform in the InfoDot e
 - AI spend analysis (Claude), shown only when the call really worked
 - Ecosystem SSO from InfoDot hub
 
-> **No payment provider is integrated, and none has been chosen.** Nothing here charges a card or an account.
-> Invoices are raised by the app; money is recorded against them. The `stripe_*` columns are unused references.
+> **Paystack is integrated in TEST MODE ONLY.** An owner or admin can pay an open invoice through Paystack's hosted
+> checkout; a live (`sk_live_`) key is refused unless `PAYSTACK_ALLOW_LIVE=true` is ALSO set. No card number ever
+> reaches this app. Everything else is recorded as a manual payment. The `stripe_*` columns are unused references.
 
 ## How billing works
 
@@ -78,17 +80,72 @@ or a wrong currency is rejected, only an `open` invoice can be paid, and the inv
 balance reaches zero. Every fact is stored in `payment_events` (provider and external id nullable;
 `unique(provider, external_id)` so a replayed provider event is a no-op, and the same id with different details
 is a `payment_conflict`). The stored payload has secrets scrubbed. Owners and admins can use "Record a manual
-payment" on an open invoice; it is logged with their name. Only payments exist: refunds are not modelled.
+payment" on an open invoice; it is logged with their name. Only payments are applied: refunds are not modelled (a Paystack `refund.processed` is recorded for an operator, never applied).
 
-### Where a payment provider plugs in
+### Paystack
 
-No provider SDK, webhook endpoint or card handling exists in this app, by design. When a provider is chosen,
-its adapter is a thin layer that (1) exposes its own webhook route and verifies that provider's signature,
-(2) maps the event to an open invoice (by invoice number or metadata), and (3) calls
-`RecordPayment::apply($invoice, new Money($cents, $currency), provider: 'name', externalId: $eventId, method:
-'card', payload: $event)`. Idempotency, partial payments, status changes and the audit row come with that call.
-Subscription renewals need no provider: `billing:advance-subscriptions` and `billing:generate-invoices` already
-raise the invoices an adapter would collect. The unused `stripe_*` columns can be dropped or reused then.
+Paystack is the one payment provider, behind the same seam as manual payments. **Test mode only**: build, verify and
+demo with `sk_test_...` keys. Nothing in this repo has been run against Paystack itself (every test uses `Http::fake`),
+so do one end-to-end run with test cards before relying on it.
+
+**Setup (test mode)**
+
+1. In the Paystack dashboard switch to **Test mode** and copy the test secret key (`sk_test_...`) and public key (`pk_test_...`).
+2. Put them in `.env` (`PAYSTACK_SECRET_KEY`, `PAYSTACK_PUBLIC_KEY`), then `php artisan config:clear` if config is cached.
+3. In the dashboard, Settings, API Keys & Webhooks, set the **Test Webhook URL** to `https://<your-host>/webhooks/paystack`.
+   Billing sends the per-payment callback URL itself (`/billing/paystack/callback/{attempt}`), so the dashboard's
+   callback URL is not used; it needs no setting.
+4. Open an open invoice as an owner or admin: **Pay now** appears with a `TEST MODE` badge. Use Paystack's published
+   test cards on its checkout page.
+
+**The TEST MODE guard.** A key starting `sk_test_` is test mode and shows a `TEST MODE` badge (top bar, invoice page).
+A key starting `sk_live_` is refused, never sent, never used to verify a webhook, and logged without the key, unless
+`PAYSTACK_ALLOW_LIVE=true` is ALSO set. A key that is neither is refused as unrecognised, and a base URL that is not
+https is refused. With no key, "Pay now" is hidden and the invoice page says online payment is not set up.
+
+**Flows**
+
+- *Pay now* (`POST /invoices/{invoice}/pay`, owner or admin of the invoice's company, open invoice with a balance only).
+  Inside one transaction with the invoice row locked, a `payment_attempts` row is created for the balance at that moment
+  (our unique reference, status `initiated`) and Paystack's `/transaction/initialize` is called (amount in cents, ZAR,
+  metadata with the invoice and company ids). The payer is redirected to Paystack's checkout. A second click reopens the
+  same attempt (one live attempt per invoice; it expires after `PAYSTACK_ATTEMPT_TTL_MINUTES`, or sooner if the balance
+  changed). If Paystack is down, the transaction rolls back: no attempt, no state change, a friendly message.
+- *Coming back* (`GET /billing/paystack/callback/{attempt}`, signed-in manager). Nothing in the query string is read.
+  Billing calls `/transaction/verify/{reference}` with the reference it stored and applies the payment only if Paystack
+  says `success` AND the amount, currency and reference match the attempt.
+- *Webhook* (`POST /webhooks/paystack`, no session or CSRF). `x-paystack-signature` (HMAC-SHA512 of the raw body with the
+  secret key) is checked with `hash_equals` over the exact bytes before the body is parsed. Bad or missing: bare `401`.
+  Not JSON: `400`. `charge.success` is matched to our attempt and settled; `refund.processed` is recorded for an operator;
+  other events are acknowledged and ignored. Every business condition answers `200` so Paystack does not retry forever.
+- *Exactly once.* The callback and the webhook share `PaystackSettlement`: the attempt row is locked and the payment goes
+  through `RecordPayment` with `provider = paystack` and the Paystack transaction id, so `unique(provider, external_id)`
+  makes callback-then-webhook, webhook-then-callback, webhook twice and truly concurrent deliveries apply once (also
+  checked with eight simultaneous deliveries against PostgreSQL 16).
+- *Held for operators.* An unknown reference, an amount, currency or reference mismatch, a body that is not a success, an
+  overpayment (the balance shrank while the payer was on Paystack) and an invoice that was settled meanwhile are written
+  to `payment_events` with `status = unmatched` or `needs_review` and a `reason`, apply nothing, and show on
+  `/operator/payment-events` (read-only; operators resolve them with Paystack). Paying in full closes the invoice and
+  resolves its open dunning case, as for any payment; existing `invoice.overdue` reminders are untouched.
+- *Refunds.* The ledger has no refund concept and reopening a paid invoice is a business decision, so a
+  `refund.processed` event is stored as `needs_review` (`refund_not_modelled`) with an audit row, and the invoice is left alone.
+
+**Not built:** card-on-file and automatic charging, subscriptions as Paystack plans, payouts and transfers, split
+payments, refunds that reopen a balance, and a manual "link this event to an invoice" action.
+
+**Verified against Paystack's documentation vs assumed**
+
+- Confirmed from Paystack's docs: base URL, bearer auth, initialize body (email, amount in the currency's subunit,
+  currency, reference with only `-` `.` `=` and alphanumerics, callback_url, metadata as stringified JSON) and the
+  `authorization_url` / `access_code` / `reference` response; verify returns `data.id`, `status`, `amount`, `currency`,
+  `reference`; `x-paystack-signature` is a HMAC-SHA512 of the payload with the secret key; `charge.success` carries the
+  amount in subunits; webhooks should be acknowledged with `200`; refund events are `refund.pending`, `refund.processing`,
+  `refund.processed`, `refund.failed`.
+- Not confirmed (the docs pages could not be fetched directly; taken from search excerpts and third-party guides):
+  the exact `refund.processed` payload (the code accepts `transaction_reference` and `transaction.reference`), the full
+  list of verify statuses (only `success` is ever treated as paid; `failed`, `abandoned` and anything else are not),
+  that `charge.failed` does not exist (it is simply ignored), how long a checkout stays valid, and whether the
+  signature may arrive upper-case (the code accepts either).
 
 ### Entitlements API
 
@@ -186,6 +243,11 @@ nothing; there is no fallback copy. Viewers cannot trigger it.
 | `BILLING_FREE_SEAT_LIMIT`, `BILLING_FREE_STORAGE_GB` | entitlements for a company with no live subscription (placeholders) |
 | `BILLING_ENTITLEMENT_SECRET_<KEY>` | per-platform secret for the entitlements API; blank = that platform cannot call |
 | `NOTIFY_INGEST_URL`, `NOTIFY_INGEST_SECRET` | Dot.Notify ingest endpoint and this app's signing secret; blank disables reminders |
+| `PAYSTACK_SECRET_KEY` | Paystack secret key, `sk_test_...`; blank switches online payment off. A `sk_live_` key is refused unless `PAYSTACK_ALLOW_LIVE=true` |
+| `PAYSTACK_PUBLIC_KEY` | `pk_test_...`; kept for completeness, the redirect flow does not need it in the browser |
+| `PAYSTACK_BASE_URL` | default `https://api.paystack.co`; must be https |
+| `PAYSTACK_ALLOW_LIVE` | default `false`; the second switch a live key needs |
+| `PAYSTACK_ATTEMPT_TTL_MINUTES` | default `30`; how long "Pay now" reopens the same checkout |
 | `ANALYTICS_INGEST_URL`, `ANALYTICS_INGEST_SECRET`, `ANALYTICS_PLATFORM_KEY` | Dot.Analytics snapshot endpoint, shared signing secret, platform key (default `billing`); blank URL or secret disables publishing |
 
 ## Tech Stack

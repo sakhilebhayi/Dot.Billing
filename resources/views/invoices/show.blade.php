@@ -23,6 +23,13 @@
         </div>
     </div>
 
+    @if(session('billing_error'))
+        <div class="state-line bad" role="alert" style="margin-bottom:1.25rem;"><span class="dot" aria-hidden="true"></span><span>{{ session('billing_error') }}</span></div>
+    @endif
+    @if(session('billing_notice'))
+        <div class="state-line ok" role="status" style="margin-bottom:1.25rem;"><span class="dot" aria-hidden="true"></span><span>{{ session('billing_notice') }}</span></div>
+    @endif
+
     @if($canManage && in_array($invoice->status, ['draft', 'open']))
         <div style="margin-bottom:1.25rem;">
             <livewire:billing.invoice-actions :invoice="$invoice" />
@@ -94,6 +101,10 @@
                 </table>
             </div>
         </div>
+    @endif
+
+    @if($canManage && $invoice->status === 'open' && $invoice->balanceMoney()->isPositive())
+        @include('invoices._pay-online', ['invoice' => $invoice])
     @endif
 
     @if($canManage && $invoice->status === 'open')

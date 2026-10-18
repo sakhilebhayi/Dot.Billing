@@ -109,6 +109,8 @@
         .pill.overdue { background:rgba(239,68,68,0.12); color:#f87171; }
         .pill.grace { background:rgba(129,140,248,0.14); color:#a5b4fc; }
         .pill.void { text-decoration:line-through; }
+        .pill.test { background:rgba(245,158,11,0.14); color:#fbbf24; letter-spacing:0.08em; text-transform:uppercase; }
+        tr.needs-attention td { background:rgba(245,158,11,0.06); }
         .btn-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
         .dot-btn-danger { background:rgba(239,68,68,0.1); color:#f87171; border:1px solid rgba(239,68,68,0.28); }
         .dot-btn-danger:hover { background:rgba(239,68,68,0.18); }
@@ -170,6 +172,10 @@
                 <span class="material-symbols-rounded nav-icon">gavel</span>
                 Dunning cases
             </a>
+            <a href="{{ route('operator.payment-events.index') }}" class="nav-item {{ request()->routeIs('operator.payment-events.*') ? 'active' : '' }}">
+                <span class="material-symbols-rounded nav-icon">payments</span>
+                Payment events
+            </a>
             @endif
             <div class="sidebar-divider" style="margin:10px 0;"></div>
             <a href="{{ route('profile.show') }}" class="nav-item {{ request()->routeIs('profile.show') ? 'active' : '' }}">
@@ -198,6 +204,9 @@
             Dot.Billing
             @endisset
         </div>
+        @if(app(\App\Services\Payments\Paystack\PaystackConfig::class)->isTestMode())
+        <span class="pill test" title="Paystack is in test mode: no real money moves.">TEST MODE</span>
+        @endif
         @auth
         <span class="topbar-team">{{ Auth::user()->currentTeam->name ?? 'Personal' }}</span>
         <livewire:notification-bell />
