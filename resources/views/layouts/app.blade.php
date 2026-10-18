@@ -27,7 +27,7 @@
         })();
     </script>
     <style>
-        :root { --accent: #818cf8; --accent-rgb: 129,140,248; }
+        :root { --accent: #818cf8; --accent-rgb: 129,140,248; --topbar-h:54px; }
         *, *::before, *::after { box-sizing: border-box; }
         body { margin:0; background:#09090b; color:#f4f4f5; font-family:'Inter',system-ui,sans-serif; font-size:14px; line-height:1.5; }
         .material-symbols-rounded { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; line-height:1; user-select:none; }
@@ -55,13 +55,33 @@
         .user-avatar { width:28px; height:28px; border-radius:50%; background:rgba(129,140,248,0.18); border:1px solid rgba(129,140,248,0.28); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#818cf8; flex-shrink:0; font-family:'Syne',sans-serif; }
         .user-name { font-size:12px; font-weight:600; color:#d4d4d8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .user-team { font-size:10px; color:#52525b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-        .topbar { position:fixed; top:0; left:260px; right:0; height:54px; background:rgba(9,9,11,0.85); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; padding:0 22px; z-index:30; gap:12px; }
+
+        /* Account section, in the sidebar footer at every width: the current team, team settings, create team,
+           switch team and log out. It stands in for the stock Jetstream bar, which sat under the fixed top bar
+           where none of it could be reached. Nothing here is hidden at any breakpoint. */
+        .sidebar-footer { max-height:55vh; overflow-y:auto; overscroll-behavior:contain; }
+        .shell-account { margin-top:2px; }
+        .team-switch summary { list-style:none; display:flex; align-items:center; gap:8px; min-height:36px; padding:6px; border-radius:8px; cursor:pointer; color:#a1a1aa; font-size:12px; font-weight:600; }
+        .team-switch summary::-webkit-details-marker { display:none; }
+        .team-switch summary:hover { background:rgba(255,255,255,0.05); color:#d4d4d8; }
+        .team-switch[open] summary { color:#f4f4f5; }
+        .team-switch .team-switch-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .team-switch-list { max-height:40vh; overflow-y:auto; padding:2px 0 4px; }
+        .team-switch-label { padding:8px 6px 3px; font-size:10px; font-weight:600; color:#52525b; text-transform:uppercase; letter-spacing:0.1em; }
+        .team-row, .logout-btn { display:flex; align-items:center; gap:8px; width:100%; min-height:36px; padding:6px; border:0; border-radius:8px; background:none; color:#a1a1aa; font:500 12px/1.3 'Inter',system-ui,sans-serif; text-align:left; text-decoration:none; cursor:pointer; }
+        .team-row:hover, .logout-btn:hover { background:rgba(255,255,255,0.05); color:#f4f4f5; }
+        .team-row[aria-current="true"] { color:#818cf8; font-weight:600; }
+        .shell-account .team-label { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .team-row .team-current { flex-shrink:0; padding:1px 6px; border-radius:100px; background:rgba(129,140,248,0.1); font-size:10px; font-weight:600; }
+        .team-switch summary .material-symbols-rounded, .team-row .material-symbols-rounded, .logout-btn .material-symbols-rounded { font-size:17px; width:20px; text-align:center; flex-shrink:0; }
+        .shell-account a:focus-visible, .shell-account button:focus-visible, .shell-account summary:focus-visible { outline:2px solid #818cf8; outline-offset:-2px; }
+        .topbar { position:fixed; top:0; left:260px; right:0; height:var(--topbar-h); background:rgba(9,9,11,0.85); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; padding:0 22px; z-index:30; gap:12px; }
         .topbar-title { font-family:'Syne',sans-serif; font-size:14px; font-weight:700; color:#f4f4f5; flex:1; }
         .topbar-team { font-size:11px; color:#52525b; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.07); border-radius:6px; padding:3px 8px; font-weight:500; white-space:nowrap; }
         .topbar-btn { width:30px; height:30px; border-radius:7px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.04); display:flex; align-items:center; justify-content:center; color:#71717a; cursor:pointer; transition:background .13s,color .13s; text-decoration:none; flex-shrink:0; }
         .topbar-btn:hover { background:rgba(255,255,255,0.09); color:#d4d4d8; }
         .topbar-btn .material-symbols-rounded { font-size:17px; }
-        .content-wrap { margin-left:260px; padding-top:54px; min-height:100vh; }
+        .content-wrap { margin-left:260px; padding-top:var(--topbar-h); min-height:100vh; }
         .dot-card { background:#141416; border:1px solid rgba(255,255,255,0.07); border-radius:12px; }
         .dot-card:hover { border-color:rgba(255,255,255,0.11); }
         .metric-val { font-family:'JetBrains Mono',monospace; font-weight:500; letter-spacing:-0.02em; }
@@ -142,8 +162,8 @@
             .topbar-team { max-width:132px; overflow:hidden; text-overflow:ellipsis; }
             .topbar-btn { width:44px; height:44px; }
             .content-wrap { margin-left:0; }
-            /* Jetstream's stock navigation bar is rendered in flow but sits under the fixed top bar; on phones it only adds dead space. */
-            nav[wire\:id] { display:none; }
+            .team-switch summary, .team-row, .logout-btn { min-height:44px; }
+            .sidebar-footer { padding-bottom:max(14px, env(safe-area-inset-bottom)); }
             .table-scroll > table { min-width:560px; }
             .page-pad { padding:1.25rem 1rem 2rem !important; }
             .r-stack { grid-template-columns:minmax(0, 1fr) !important; }
@@ -230,6 +250,51 @@
                     <div class="user-team">{{ Auth::user()->currentTeam->name ?? 'Personal' }}</div>
                 </div>
             </div>
+            <div class="shell-account">
+                @if (Laravel\Jetstream\Jetstream::hasTeamFeatures() && Auth::user()->currentTeam)
+                <details class="team-switch">
+                    <summary>
+                        <span class="material-symbols-rounded" aria-hidden="true">groups</span>
+                        <span class="team-switch-name">Team: {{ Auth::user()->currentTeam->name }}</span>
+                        <span class="material-symbols-rounded" aria-hidden="true">unfold_more</span>
+                    </summary>
+                    <div class="team-switch-list">
+                        <a class="team-row" href="{{ route('teams.show', Auth::user()->currentTeam->id) }}">
+                            <span class="material-symbols-rounded" aria-hidden="true">settings</span>
+                            <span class="team-label">Team settings</span>
+                        </a>
+                        @can('create', Laravel\Jetstream\Jetstream::newTeamModel())
+                        <a class="team-row" href="{{ route('teams.create') }}">
+                            <span class="material-symbols-rounded" aria-hidden="true">group_add</span>
+                            <span class="team-label">Create new team</span>
+                        </a>
+                        @endcan
+                        @if (Auth::user()->allTeams()->count() > 1)
+                        <div class="team-switch-label">Switch teams</div>
+                        @foreach (Auth::user()->allTeams() as $switchTeam)
+                        <form method="POST" action="{{ route('current-team.update') }}">
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="team_id" value="{{ $switchTeam->id }}">
+                            <button type="submit" class="team-row" @if (Auth::user()->isCurrentTeam($switchTeam)) aria-current="true" @endif>
+                                <span class="material-symbols-rounded" aria-hidden="true">{{ Auth::user()->isCurrentTeam($switchTeam) ? 'check_circle' : 'swap_horiz' }}</span>
+                                <span class="team-label">{{ $switchTeam->name }}</span>
+                                @if (Auth::user()->isCurrentTeam($switchTeam))<span class="team-current">current</span>@endif
+                            </button>
+                        </form>
+                        @endforeach
+                        @endif
+                    </div>
+                </details>
+                @endif
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="logout-btn">
+                        <span class="material-symbols-rounded" aria-hidden="true">logout</span>
+                        <span class="team-label">Log out</span>
+                    </button>
+                </form>
+            </div>
         </div>
         @endauth
     </aside>
@@ -267,7 +332,9 @@
         </a>
     </header>
 
-    @livewire('navigation-menu')
+    {{-- The stock Jetstream bar (@livewire('navigation-menu')) used to render here, in flow under the fixed top bar.
+         Its team switcher and Log out could not be clicked and it added 64px of dead space above the content.
+         Those controls now live in the sidebar footer (.shell-account), at every width. --}}
 
     <div class="content-wrap">
         <main>{{ $slot }}</main>
@@ -302,7 +369,7 @@
                 if (!isOpen()) return;
                 if (e.key === 'Escape') { setOpen(false, true); return; }
                 if (e.key !== 'Tab') return;
-                var f = drawer.querySelectorAll('a[href], button:not([disabled])');
+                var f = Array.prototype.filter.call(drawer.querySelectorAll('a[href], button:not([disabled]), summary'), function (el) { return el.offsetParent !== null; });
                 if (!f.length) return;
                 var first = f[0], last = f[f.length - 1];
                 if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
