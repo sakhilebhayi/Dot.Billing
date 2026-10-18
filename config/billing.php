@@ -55,6 +55,16 @@ return [
         'tolerance' => 300,
     ],
 
+    // Overdue reminders go to Dot.Notify's ingest API (server to server, queued). Both the URL and the
+    // secret must be set or reminders are simply not sent. The secret is this app's
+    // NOTIFY_INGEST_SECRET_BILLING value from Dot.Notify's .env.
+    'notify' => [
+        'url' => env('NOTIFY_INGEST_URL'),
+        'secret' => env('NOTIFY_INGEST_SECRET'),
+        'platform' => 'billing',
+        'timeout' => 5,
+    ],
+
     // What the entitlements API reports for a company that has no live subscription.
     // These are placeholders until the owner decides the free tier: set them per environment.
     'free_tier' => [

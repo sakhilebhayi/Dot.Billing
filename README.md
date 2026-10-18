@@ -110,6 +110,53 @@ limits from `config/billing.php` (placeholders: set `BILLING_FREE_SEAT_LIMIT` an
 `past_due` keeps the plan's limits; whether to restrict is the consuming app's decision. The signature does not
 cover the URL (the scheme's known limit). Operators can check any company at `/operator/entitlements`.
 
+### Dunning, reminders and safety
+
+`billing:scan-alerts` (every 15 minutes) opens a **dunning case** for an invoice that is open and past its due
+date, and for a failed payment, for a platform operator to review at `/operator/dunning-cases`. It never suspends
+or cancels anything. The operator can:
+
+- **Grant grace**: the case moves to `grace` with an end date and the invoice stops counting as overdue until then.
+  The invoice's real due date is not rewritten. The scanner reopens the case only after the grace ends and the
+  invoice is still unpaid.
+- **Cancel the subscription**: ends the one subscription the case's invoice was raised for. If that cannot be
+  determined (a legacy invoice with no link and no single live subscription) nothing is cancelled and the
+  operator is told.
+- **Dismiss**: closes the case, changes nothing else.
+
+Each case is unique per overdue invoice and per failed payment (a partial unique index on SQLite and PostgreSQL,
+the scanner's check elsewhere). Paying an invoice in full resolves its open case.
+
+**Overdue reminders** go to Dot.Notify's ingest API (`POST /api/ingest/events`, event `invoice.overdue`, to the
+team owner) through `App\Services\Notify\NotifyClient`: queued (`App\Jobs\SendNotifyEvent`, so it needs a queue
+worker, `php artisan queue:work`), 5 second timeout, retried with backoff while Notify is down, never throws into
+the caller, and disabled when `NOTIFY_INGEST_URL` or `NOTIFY_INGEST_SECRET` is blank. The request is signed with
+HMAC-SHA256 over `"{timestamp}.{raw body}"`; the idempotency key is event + invoice id + date. The team must be
+linked to InfoDot (`teams.infodot_team_uuid`) or there is nobody to address and the reminder is skipped.
+
+**Safety.** Financial foreign keys are `RESTRICT` on PostgreSQL and MySQL, so a team's subscriptions, invoices,
+payments and dunning history cannot be destroyed by deleting the team; the app refuses first with a message. This
+means a team (and an account that owns one) with billing history cannot be deleted: retention over erasure,
+pending an owner decision. SQLite (development and tests) keeps the old constraints and relies on the app-level
+guard. Indexes exist for the statuses, due dates and `(team_id, status)` pairs the clock and scanner query.
+
+**AI spend analysis** returns what the model actually said about this team's usage totals, labelled as AI-written.
+With no `ANTHROPIC_API_KEY`, a failed call or an unusable answer it shows "AI analysis unavailable" and stores
+nothing; there is no fallback copy. Viewers cannot trigger it.
+
+### Configuration
+
+| Variable | Meaning |
+|---|---|
+| `BILLING_INVOICE_NUMBER_FORMAT`, `BILLING_INVOICE_NUMBER_PAD` | invoice numbers, default `INV-{YYYY}-{seq}`, padded to 4 |
+| `BILLING_PAYMENT_TERMS_DAYS` | days from issue to due date, default 14 |
+| `BILLING_AUTO_FINALIZE_INVOICES` | `false` leaves generated invoices as drafts for a manager to finalize |
+| `BILLING_TAX_RATE` | percentage applied to the subtotal, default `0` |
+| `BILLING_ISSUER_NAME`, `_ADDRESS` (`\|`-separated lines), `_TAX_NUMBER`, `_EMAIL` | printed on the invoice; blank means not printed |
+| `BILLING_FREE_SEAT_LIMIT`, `BILLING_FREE_STORAGE_GB` | entitlements for a company with no live subscription (placeholders) |
+| `BILLING_ENTITLEMENT_SECRET_<KEY>` | per-platform secret for the entitlements API; blank = that platform cannot call |
+| `NOTIFY_INGEST_URL`, `NOTIFY_INGEST_SECRET` | Dot.Notify ingest endpoint and this app's signing secret; blank disables reminders |
+
 ## Tech Stack
 
 | Layer | Technology |

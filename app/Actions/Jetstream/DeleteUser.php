@@ -5,6 +5,7 @@ namespace App\Actions\Jetstream;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Laravel\Jetstream\Contracts\DeletesTeams;
 use Laravel\Jetstream\Contracts\DeletesUsers;
 
@@ -20,6 +21,15 @@ class DeleteUser implements DeletesUsers
      */
     public function delete(User $user): void
     {
+        // Check every owned team BEFORE touching any, so a refusal leaves nothing half-deleted.
+        foreach ($user->ownedTeams as $team) {
+            if ($team->hasBillingRecords()) {
+                throw ValidationException::withMessages([
+                    'password' => __('Your account owns ":name", which has billing history that must be kept, so the account cannot be deleted yet. Contact support.', ['name' => $team->name]),
+                ]);
+            }
+        }
+
         DB::transaction(function () use ($user) {
             $this->deleteTeams($user);
             $user->deleteProfilePhoto();

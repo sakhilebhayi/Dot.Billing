@@ -6,10 +6,8 @@ use App\Models\BillingPayment;
 use Illuminate\Notifications\Notification;
 
 /**
- * In-app (database channel only) notification for a failed payment attempt.
- * Not yet wired to any automatic trigger — dispatch manually via
- * `$user->notify(new PaymentFailedNotification($payment))` until payment
- * lifecycle events exist (see wiki.md §5 and §8).
+ * In-app (database channel only) notification for a failed payment attempt. Sent by
+ * billing:scan-alerts when it opens a dunning case for the payment.
  */
 class PaymentFailedNotification extends Notification
 {
@@ -31,7 +29,7 @@ class PaymentFailedNotification extends Notification
         return [
             'type' => 'payment_failed',
             'title' => 'Payment failed',
-            'message' => 'A payment of '.$this->payment->currency.' '.number_format((float) $this->payment->amount, 2).' failed'.($this->payment->failure_reason ? ": {$this->payment->failure_reason}" : '.'),
+            'message' => 'A payment of '.$this->payment->amountMoney()->format().' failed'.($this->payment->failure_reason ? ": {$this->payment->failure_reason}" : '.'),
             'payment_id' => $this->payment->id,
         ];
     }

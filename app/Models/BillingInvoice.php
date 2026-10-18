@@ -18,6 +18,13 @@ class BillingInvoice extends Model
 
     protected $table = 'billing_invoices';
 
+    /** Mirror column defaults so a freshly created instance is usable without a refresh. */
+    protected $attributes = [
+        'currency' => 'ZAR',
+        'amount_paid_cents' => 0,
+        'tax_rate_bps' => 0,
+    ];
+
     /** @var array<string, string> legacy decimal column => cents column */
     protected array $legacyDecimals = ['subtotal' => 'subtotal_cents', 'tax' => 'tax_cents', 'total' => 'total_cents'];
 

@@ -1,19 +1,26 @@
 <div class="dot-card" style="padding:1.5rem;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:0.75rem;">
-        <h3 style="font-family:'Syne',sans-serif;font-size:0.875rem;font-weight:700;color:#f4f4f5;margin:0;">Platform Usage</h3>
-        <button wire:click="analyzeSpend" class="dot-btn dot-btn-ghost" style="font-size:12px;padding:5px 12px;">
+        <h3 class="dot-h">Platform Usage</h3>
+        @if($this->canRunAnalysis)
+        <button type="button" wire:click="analyzeSpend" class="dot-btn dot-btn-ghost" style="font-size:12px;padding:5px 12px;">
             <span class="material-symbols-rounded" style="font-size:14px;">auto_awesome</span>
             AI Spend Analysis
         </button>
+        @endif
     </div>
 
     @if(!empty($aiInsights))
-    <div style="background:rgba(129,140,248,0.06);border:1px solid rgba(129,140,248,0.2);border-radius:8px;padding:1rem;margin-bottom:1.25rem;">
-        <div style="font-size:11px;font-weight:600;color:#818cf8;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.08em;">AI Insights</div>
+    <div style="border:1px solid rgba(129,140,248,0.2);border-radius:8px;padding:1rem;margin-bottom:1.25rem;">
+        <div class="dot-label" style="color:#818cf8;margin-bottom:0.5rem;">AI insights</div>
         @foreach($aiInsights as $insight)
-            <div style="font-size:12px;color:#a1a1aa;margin-bottom:4px;">· {{ $insight }}</div>
+            <div style="font-size:12px;color:#d4d4d8;margin-bottom:4px;">· {{ $insight }}</div>
         @endforeach
+        <div class="dot-muted" style="margin-top:8px;font-size:11px;">Written by an AI model from this team's usage totals. It can be wrong: check the figures before acting on it.</div>
     </div>
+    @elseif($aiUnavailable)
+    <div class="state-line attn" role="status" style="margin-bottom:1.25rem;"><span class="dot" aria-hidden="true"></span><span>AI analysis unavailable. Nothing was generated; try again later.</span></div>
+    @elseif($aiNothingToAnalyse)
+    <div class="state-line" role="status" style="margin-bottom:1.25rem;"><span class="dot" aria-hidden="true"></span><span>Nothing to analyse yet: no usage has been recorded.</span></div>
     @endif
 
     <div wire:loading.delay wire:target="analyzeSpend" class="dot-loading-overlay">

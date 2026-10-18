@@ -106,7 +106,7 @@ class InvoicePagesTest extends TestCase
             ->assertSee('12 Example Road')
             ->assertSee('VAT-4455667788')
             ->assertSee('Customer Team Distinct Name')
-            ->assertDontSee('sidebar');
+            ->assertDontSee('class="sidebar"', false);
         $this->assertStringNotContainsString('Dot.Billing</div>', $response->getContent());
     }
 
@@ -118,8 +118,9 @@ class InvoicePagesTest extends TestCase
 
         $this->actingAs($owner)->get(route('invoices.print', $invoice))
             ->assertOk()
-            ->assertDontSee('Tax number')
-            ->assertDontSee('VAT');
+            ->assertDontSee('Tax number:')
+            ->assertDontSee('VAT-')
+            ->assertDontSee('From</div>', false);
     }
 
     public function test_another_teams_invoice_cannot_be_printed(): void

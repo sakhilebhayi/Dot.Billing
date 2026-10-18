@@ -143,10 +143,14 @@ class PlanManagerTest extends TestCase
         $this->makePlan(['name' => 'Retired Plan Distinct', 'is_active' => false]);
         $this->makeSubscription($owner->currentTeam, $plan);
 
-        Livewire::actingAs($this->makeOperator())->test(PlanManager::class)
+        $component = Livewire::actingAs($this->makeOperator())->test(PlanManager::class)
             ->assertSee('Counted Plan Distinct')
             ->assertSee('Retired Plan Distinct')
             ->assertSee('Archived');
+
+        $counts = $component->instance()->plans->pluck('live_subscribers', 'name');
+        $this->assertSame(1, (int) $counts['Counted Plan Distinct']);
+        $this->assertSame(0, (int) $counts['Retired Plan Distinct']);
     }
 
     public function test_there_is_no_way_to_delete_a_plan(): void

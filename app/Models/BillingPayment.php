@@ -16,6 +16,11 @@ class BillingPayment extends Model
 
     protected $table = 'billing_payments';
 
+    /** Mirror column defaults so a freshly created instance is usable without a refresh. */
+    protected $attributes = [
+        'currency' => 'ZAR',
+    ];
+
     /** @var array<string, string> */
     protected array $legacyDecimals = ['amount' => 'amount_cents'];
 

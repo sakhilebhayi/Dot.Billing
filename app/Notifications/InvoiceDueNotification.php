@@ -6,10 +6,8 @@ use App\Models\BillingInvoice;
 use Illuminate\Notifications\Notification;
 
 /**
- * In-app (database channel only) notification for an upcoming/overdue invoice.
- * Not yet wired to any automatic trigger — dispatch manually via
- * `$user->notify(new InvoiceDueNotification($invoice))` until subscription/
- * invoice lifecycle events exist (see wiki.md §5 and §8).
+ * In-app (database channel only) notification for an overdue invoice. Sent by
+ * billing:scan-alerts when a dunning case is opened or reopened.
  */
 class InvoiceDueNotification extends Notification
 {
@@ -31,7 +29,7 @@ class InvoiceDueNotification extends Notification
         return [
             'type' => 'invoice_due',
             'title' => 'Invoice due',
-            'message' => "Invoice {$this->invoice->invoice_number} for {$this->invoice->currency} ".number_format((float) $this->invoice->total, 2).' is due '.($this->invoice->due_date?->format('M d, Y') ?? 'soon').'.',
+            'message' => "Invoice {$this->invoice->invoice_number} for {$this->invoice->balanceMoney()->format()} is due ".($this->invoice->due_date?->format('M d, Y') ?? 'soon').'.',
             'invoice_id' => $this->invoice->id,
             'invoice_number' => $this->invoice->invoice_number,
             'url' => route('invoices.show', $this->invoice),

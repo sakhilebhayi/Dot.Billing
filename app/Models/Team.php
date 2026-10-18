@@ -63,6 +63,19 @@ class Team extends JetstreamTeam
             ->latestOfMany();
     }
 
+    /**
+     * Whether the team has financial records that must outlive it (see the restrict-foreign-keys
+     * migration). Bypasses the team scope: this is a fact about the team, not about the signed-in user.
+     */
+    public function hasBillingRecords(): bool
+    {
+        return BillingSubscription::withoutGlobalScope('team')->where('team_id', $this->id)->exists()
+            || BillingInvoice::withoutGlobalScope('team')->where('team_id', $this->id)->exists()
+            || BillingPayment::withoutGlobalScope('team')->where('team_id', $this->id)->exists()
+            || PaymentEvent::withoutGlobalScope('team')->where('team_id', $this->id)->exists()
+            || BillingAuditEvent::withoutGlobalScope('team')->where('team_id', $this->id)->exists();
+    }
+
     public function subscriptions(): HasMany
     {
         return $this->hasMany(BillingSubscription::class);
