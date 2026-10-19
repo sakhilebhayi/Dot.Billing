@@ -426,20 +426,39 @@ jobs:
           HAVE=$(grep -c "$MARK" "$OLD" || true)
           if [ "$WANT" -eq 0 ] && [ "$HAVE" -eq 0 ]; then
             rm -f "$OLD" "$NEW" "$CHK" "$ERR"; flock -u 9
+            rm -f "$HOME/.dot-cron.d/${MARK#\# dot-}.cron"
             echo "== crontab: nothing to install for $MARK and nothing of mine to remove; not written"
             exit 0
           fi
+          KEY="${MARK#\# dot-}"
+          EXPECT_MINE=$WANT
           OTHERS=$(grep -v "$MARK" "$OLD" | grep -c . || true)
           {
             grep -v "$MARK" "$OLD" || true
             if [ -n "$SCHED_LINE" ]; then printf '%s\n' "$SCHED_LINE"; fi
             if [ -n "$QUEUE_LINE" ]; then printf '%s\n' "$QUEUE_LINE"; fi
           } > "$NEW"
+          # Runner mode (docs/programme/REMEDIATION_ROADMAP.md, R-1): when the account runs the bounded-concurrency
+          # cron runner (InfoDot: Cron Runner workflow, "install"), this app's commands go to ~/.dot-cron.d/$KEY.cron
+          # and the runner starts them, at most 4 at a time. Its own crontab lines are then removed (a migration on
+          # deploy). Without the runner the crontab lines above are installed exactly as before.
+          if [ -x "$HOME/bin/dot-cron-runner" ] && grep -q '# dot-cron-runner' "$OLD"; then
+            CMDS="$(grep -F -- "$MARK" "$NEW" | sed -E 's/^[^ ]+ [^ ]+ [^ ]+ [^ ]+ [^ ]+ //; s/ *# dot-[a-z0-9-]*$//' || true)"
+            mkdir -p "$HOME/.dot-cron.d"
+            if [ -n "$CMDS" ]; then
+              printf '%s\n' "$CMDS" > "$HOME/.dot-cron.d/$KEY.cron.tmp" && mv "$HOME/.dot-cron.d/$KEY.cron.tmp" "$HOME/.dot-cron.d/$KEY.cron"
+            else
+              rm -f "$HOME/.dot-cron.d/$KEY.cron"
+            fi
+            grep -v -F -- "$MARK" "$NEW" > "$NEW.t" || true; mv "$NEW.t" "$NEW"
+            EXPECT_MINE=0
+            echo "== runner mode: $(printf '%s' "$CMDS" | grep -c . || true) command(s) written to ~/.dot-cron.d/$KEY.cron, none left in the crontab"
+          fi
           crontab "$NEW"
           read_crontab "$CHK" || : > "$CHK"
           AFTER=$(grep -v "$MARK" "$CHK" | grep -c . || true)
           MINE=$(grep -c "$MARK" "$CHK" || true)
-          if [ "$AFTER" != "$OTHERS" ] || [ "$MINE" != "$WANT" ]; then
+          if [ "$AFTER" != "$OTHERS" ] || [ "$MINE" != "$EXPECT_MINE" ]; then
             crontab "$OLD"
             echo "::error::crontab verification failed (other lines before=$OTHERS after=$AFTER, mine=$MINE, expected=$WANT); the previous crontab was restored."; exit 1
           fi
