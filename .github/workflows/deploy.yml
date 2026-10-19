@@ -361,6 +361,12 @@ jobs:
           # scheduler for six weeks. cron runs with a minimal PATH, so lines carry
           # the absolute PHP path and keep their last output in a log file.
           MARK="# dot-billing"
+          # Spread the load on the shared account. 43 cron lines used to fire in the same second and
+          # the host answered "fork: Resource temporarily unavailable" (2026-10-19), so scheduler and
+          # queue runs started late or not at all. `exec` drops the sh parent (one process per line instead
+          # of two); the queue worker runs every second minute, on this app's own parity, so about half
+          # of the workers start in any given minute. A queued job waits at most about two minutes.
+          QMIN="$(( $(printf %s "$MARK" | cksum | cut -d" " -f1) % 2 ))-59/2"
           # One writer at a time on this account: deploys of different apps can
           # coincide and would otherwise race on the single crontab.
           command -v flock > /dev/null || { echo "::error::flock is not installed on the host; crontab writes cannot be serialised"; exit 1; }
@@ -385,13 +391,13 @@ jobs:
           if printf '%s\n' "$SCHED_OUT" | grep -qi 'no scheduled tasks'; then
             echo "== schedule:list: no scheduled tasks, so no scheduler line"
           else
-            SCHED_LINE="* * * * * cd $DEPLOY_PATH && $PHP_BIN artisan schedule:run > storage/logs/cron-scheduler.log 2>&1 $MARK"
+            SCHED_LINE="* * * * * cd $DEPLOY_PATH && exec $PHP_BIN artisan schedule:run > storage/logs/cron-scheduler.log 2>&1 $MARK"
             WANT=$((WANT + 1))
             echo "== schedule:list: scheduled tasks present, scheduler line needed"
           fi
           QUEUE_CONN="$(grep -E '^QUEUE_CONNECTION=' .env | tail -1 | cut -d= -f2- | tr -d "\"' " || true)"
           if grep -rqE 'ShouldQueue|->queue\(|Queue::(push|later)' app && [ "${QUEUE_CONN:-database}" != "sync" ]; then
-            QUEUE_LINE="* * * * * cd $DEPLOY_PATH && $PHP_BIN artisan queue:work --stop-when-empty --tries=3 --timeout=90 --max-time=50 > storage/logs/cron-queue.log 2>&1 $MARK"
+            QUEUE_LINE="$QMIN * * * * cd $DEPLOY_PATH && exec $PHP_BIN artisan queue:work --stop-when-empty --tries=3 --timeout=90 --max-time=50 > storage/logs/cron-queue.log 2>&1 $MARK"
             WANT=$((WANT + 1))
             echo "== queued work present (QUEUE_CONNECTION=${QUEUE_CONN:-database}), queue worker line needed"
           else
