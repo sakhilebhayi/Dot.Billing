@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Laravel\Jetstream\Jetstream;
 
-Route::get('/auth/ecosystem', [EcosystemAuthController::class, 'handle'])
+Route::match(['get', 'post'], '/auth/ecosystem', [EcosystemAuthController::class, 'handle'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class])
     ->middleware('throttle:10,1')
     ->name('ecosystem.auth');
 
