@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
@@ -115,7 +116,7 @@ class EcosystemSsoPostTest extends TestCase
 
     public function test_the_post_route_carries_no_csrf_middleware_because_it_comes_from_another_origin(): void
     {
-        $route = Route::getRoutes()->match(\Illuminate\Http\Request::create('/auth/ecosystem', 'POST'));
+        $route = Route::getRoutes()->match(Request::create('/auth/ecosystem', 'POST'));
 
         foreach (app('router')->gatherRouteMiddleware($route) as $name) {
             $this->assertStringNotContainsString('CsrfToken', is_string($name) ? $name : '');
