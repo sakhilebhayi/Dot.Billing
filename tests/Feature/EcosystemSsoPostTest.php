@@ -6,7 +6,6 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -120,13 +119,18 @@ class EcosystemSsoPostTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_the_post_route_carries_no_csrf_middleware_because_it_comes_from_another_origin(): void
+    public function test_the_post_is_not_rejected_for_a_missing_csrf_token_because_it_comes_from_another_origin(): void
     {
-        $route = Route::getRoutes()->match(Request::create('/auth/ecosystem', 'POST'));
+        // CSRF verification is skipped when the app runs unit tests, which would hide exactly this bug (HTTP 419 in
+        // production, found when the first deploy answered 419): run the request in production mode.
+        $this->app['env'] = 'production';
+        $user = User::factory()->create();
 
-        foreach (app('router')->gatherRouteMiddleware($route) as $name) {
-            $this->assertStringNotContainsString('CsrfToken', is_string($name) ? $name : '');
-        }
+        $response = $this->post('/auth/ecosystem', ['token' => $this->token($user)], $this->fromInfodot());
+
+        $this->assertNotSame(419, $response->getStatusCode(), 'the cross-origin sign-in post must not need a CSRF token');
+        $response->assertRedirect();
+        $this->assertAuthenticatedAs($user);
     }
 
     public function test_when_infodot_is_known_only_its_own_origin_is_accepted_not_a_sibling_subdomain(): void
