@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 use Laravel\Jetstream\Jetstream;
 
 Route::match(['get', 'post'], '/auth/ecosystem', [EcosystemAuthController::class, 'handle'])
-    ->withoutMiddleware(['Illuminate\Foundation\Http\Middleware\VerifyCsrfToken', 'Illuminate\Foundation\Http\Middleware\ValidateCsrfToken'])
+    ->withoutMiddleware(['Illuminate\Foundation\Http\Middleware\PreventRequestForgery', 'Illuminate\Foundation\Http\Middleware\VerifyCsrfToken', 'Illuminate\Foundation\Http\Middleware\ValidateCsrfToken'])
     ->middleware('throttle:10,1')
     ->name('ecosystem.auth');
 
