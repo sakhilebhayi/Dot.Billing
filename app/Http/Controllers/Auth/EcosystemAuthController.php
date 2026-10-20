@@ -53,6 +53,15 @@ class EcosystemAuthController extends Controller
         }
 
         $host = strtolower($host);
+
+        // When this app knows InfoDot's address, exactly that origin is accepted, not a sibling subdomain.
+        $infodot = parse_url((string) config('ecosystem.infodot.redeem_url', ''), PHP_URL_HOST);
+
+        if (is_string($infodot) && $infodot !== '') {
+            return $host === strtolower($infodot);
+        }
+
+        // An app without that setting falls back to its own parent domain.
         $self = strtolower($request->getHost());
         $parent = str_contains($self, '.') ? substr($self, strpos($self, '.') + 1) : $self;
 

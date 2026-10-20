@@ -19,9 +19,15 @@ class EcosystemSsoPostTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** InfoDot's launch page, as the browser reports it: this app's parent domain (tasks.infodot.co.za -> infodot.co.za). */
+    /** InfoDot's launch page, as the browser reports it: InfoDot's host when this app is told it, else this app's parent domain. */
     private function fromInfodot(): array
     {
+        $infodot = parse_url((string) config('ecosystem.infodot.redeem_url', ''), PHP_URL_HOST);
+
+        if (is_string($infodot) && $infodot !== '') {
+            return ['Origin' => 'https://'.$infodot];
+        }
+
         $host = (string) parse_url((string) config('app.url'), PHP_URL_HOST);
         $parent = str_contains($host, '.') ? substr($host, strpos($host, '.') + 1) : $host;
 
@@ -121,5 +127,18 @@ class EcosystemSsoPostTest extends TestCase
         foreach (app('router')->gatherRouteMiddleware($route) as $name) {
             $this->assertStringNotContainsString('CsrfToken', is_string($name) ? $name : '');
         }
+    }
+
+    public function test_when_infodot_is_known_only_its_own_origin_is_accepted_not_a_sibling_subdomain(): void
+    {
+        config(['ecosystem.infodot.redeem_url' => 'https://infodot.co.za/api/ecosystem/redeem']);
+        $user = User::factory()->create();
+
+        $this->post('/auth/ecosystem', ['token' => $this->token($user)], ['Origin' => 'https://evil.infodot.co.za'])
+            ->assertStatus(303)->assertRedirect('/login');
+        $this->assertGuest();
+
+        $this->post('/auth/ecosystem', ['token' => $this->token($user)], ['Origin' => 'https://infodot.co.za'])->assertRedirect();
+        $this->assertAuthenticatedAs($user);
     }
 }
