@@ -15,6 +15,20 @@ class BillingTest extends TestCase
 {
     use RefreshDatabase;
 
+    /** InfoDot's launch page, as the browser reports it. */
+    private function fromInfodot(): array
+    {
+        $infodot = parse_url((string) config('ecosystem.infodot.redeem_url', ''), PHP_URL_HOST);
+
+        if (is_string($infodot) && $infodot !== '') {
+            return ['Origin' => 'https://'.$infodot];
+        }
+
+        $host = (string) parse_url((string) config('app.url'), PHP_URL_HOST);
+
+        return ['Origin' => 'https://'.(str_contains($host, '.') ? substr($host, strpos($host, '.') + 1) : $host)];
+    }
+
     private User $user;
 
     private Team $team;
@@ -38,7 +52,7 @@ class BillingTest extends TestCase
 
     public function test_ecosystem_auth_rejects_missing_token(): void
     {
-        $this->get('/auth/ecosystem')->assertStatus(303)->assertRedirect('/login');
+        $this->post(route('ecosystem.auth'), [], $this->fromInfodot())->assertStatus(303)->assertRedirect('/login');
     }
 
     public function test_billing_plan_can_be_created(): void

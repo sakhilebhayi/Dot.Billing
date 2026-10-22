@@ -17,11 +17,17 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class EcosystemAuthController extends Controller
 {
+    /** A GET (an old link with the token in the URL) is not honoured: the token is never read. */
+    public function legacy(): RedirectResponse
+    {
+        return redirect()->to('/login');
+    }
+
     /**
      * Sign-in from InfoDot. The token arrives in the POST body of a form InfoDot's launch page posts here, so it
      * is never in a URL (address bar, history, access logs, Referer). A refused sign-in lands on the plain login
-     * page: the credential is not shown, echoed, flashed or logged. A GET with ?token= is still understood for
-     * links minted before this change, and is spent exactly the same way.
+     * page: the credential is not shown, echoed, flashed or logged. A GET with ?token= is no longer honoured
+     * (the route sends it to the login page), and a token in the query string of a POST is ignored.
      */
     public function handle(Request $request): RedirectResponse
     {
@@ -77,7 +83,7 @@ class EcosystemAuthController extends Controller
 
     public function redeem(Request $request, IdentityClient $infoDot, ProvisionUserFromInfoDot $provision, SyncTeamsFromInfoDot $syncTeams): RedirectResponse
     {
-        $token = $request->input('token');
+        $token = $request->post('token');
 
         // A missing, empty or array token (?token[]=x) is a clean 403, never a 500.
         abort_unless(is_string($token) && $token !== '', 403);
@@ -109,7 +115,7 @@ class EcosystemAuthController extends Controller
         // A new session id at the moment of login, so a session id planted before it is useless.
         $request->session()->regenerate();
 
-        return redirect()->to($this->safeRedirect($request->input('redirect')) ?? route('dashboard'));
+        return redirect()->to($this->safeRedirect($request->post('redirect')) ?? route('dashboard'));
     }
 
     /**
