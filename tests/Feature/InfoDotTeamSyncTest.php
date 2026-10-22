@@ -18,6 +18,20 @@ class InfoDotTeamSyncTest extends TestCase
 {
     use RefreshDatabase;
 
+    /** InfoDot's launch page, as the browser reports it. */
+    private function fromInfodot(): array
+    {
+        $infodot = parse_url((string) config('ecosystem.infodot.redeem_url', ''), PHP_URL_HOST);
+
+        if (is_string($infodot) && $infodot !== '') {
+            return ['Origin' => 'https://'.$infodot];
+        }
+
+        $host = (string) parse_url((string) config('app.url'), PHP_URL_HOST);
+
+        return ['Origin' => 'https://'.(str_contains($host, '.') ? substr($host, strpos($host, '.') + 1) : $host)];
+    }
+
     private const URL = 'https://infodot.test/api/ecosystem/redeem';
 
     private const ACME = '11111111-1111-4111-8111-111111111111';
@@ -45,7 +59,7 @@ class InfoDotTeamSyncTest extends TestCase
         ])]);
 
         auth('web')->logout();
-        $this->get(route('ecosystem.auth', ['token' => 'one-time']))->assertRedirect();
+        $this->post(route('ecosystem.auth'), ['token' => 'one-time'], $this->fromInfodot())->assertRedirect();
     }
 
     private function company(string $uuid, string $name, string $role, bool $personal = false): array

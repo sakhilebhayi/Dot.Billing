@@ -113,10 +113,28 @@ class EcosystemSsoPostTest extends TestCase
         }
     }
 
-    public function test_an_old_get_link_with_a_bad_token_also_ends_on_the_login_page_not_on_an_error_page_with_the_token(): void
+    public function test_an_old_get_link_is_no_longer_honoured_and_the_token_in_it_is_not_spent(): void
     {
-        $this->get('/auth/ecosystem?token=not-a-token')->assertStatus(303)->assertRedirect('/login');
+        $user = User::factory()->create();
+        $token = $this->token($user);
+
+        $response = $this->get('/auth/ecosystem?token='.urlencode($token));
+
+        $response->assertRedirect('/login');
         $this->assertGuest();
+        $this->assertSame(1, DB::table('personal_access_tokens')->count(), 'a GET must not spend or even look at the token');
+    }
+
+    public function test_a_token_in_the_query_string_of_a_post_is_ignored(): void
+    {
+        $user = User::factory()->create();
+        $token = $this->token($user);
+
+        $response = $this->post('/auth/ecosystem?token='.urlencode($token), [], $this->fromInfodot());
+
+        $this->assertGuest();
+        $this->assertSame(1, DB::table('personal_access_tokens')->count(), 'only the POST body is read');
+        $this->assertStringNotContainsString($token, (string) $response->headers->get('Location').$response->getContent());
     }
 
     public function test_the_post_is_not_rejected_for_a_missing_csrf_token_because_it_comes_from_another_origin(): void
