@@ -199,6 +199,38 @@ jobs:
           ls -1t "$HOME"/dot-billing-*.tgz | tail -n +4 | xargs -r rm -f
           echo "== Rollback copy: $BACKUP ($(du -h "$BACKUP" | cut -f1))  [restore: stop writes, tar xzf it over $DEPLOY_PATH]"
 
+          # ---- application-folder guard
+          # The application folder (the one that holds artisan, .env, database/, storage/, vendor/) sits inside the docroot,
+          # beside public/. Where it has no `.htaccess` that denies access, the web server serves it: on 2026-10-20 four
+          # platforms answered 200 for database/database.sqlite, storage/logs/laravel.log, composer files and
+          # vendor/autoload.php. This writes the deny file the same way the manual app-folder-guard.yml workflow does.
+          # It runs BEFORE any `artisan down` and can never fail the deploy: the body is a subshell with `set +e`, and
+          # every outcome (including a failed write) is one line in the log. The file is not tracked, so `git reset --hard` leaves it alone.
+          guard_app_folder() (
+            set +e
+            F="$DEPLOY_PATH/.htaccess"
+            if [ ! -f "$DEPLOY_PATH/artisan" ]; then echo "== App-folder guard: skipped (no artisan in $DEPLOY_PATH)"; exit 0; fi
+            # An app folder directly in the home folder may itself BE the docroot: denying it would take the site down.
+            if [ "$(dirname "$DEPLOY_PATH")" = "$HOME" ]; then echo "== App-folder guard: skipped ($DEPLOY_PATH is directly in the home folder, it may be the docroot)"; exit 0; fi
+            if [ -f "$F" ] && grep -q 'Require all denied' "$F"; then
+              echo "== App-folder guard: already present"
+            elif [ -f "$F" ]; then
+              if cp "$F" "$F.before-guard" && printf '\n# Dot: the application folder is never served.\nRequire all denied\n' >> "$F"; then
+                echo "== App-folder guard: appended to the existing .htaccess (original kept as .htaccess.before-guard)"
+              else
+                echo "::warning::App-folder guard: could not append to $F (deploy continues)"
+              fi
+            else
+              if printf '# Dot: the application folder is never served.\nRequire all denied\n' > "$F"; then
+                echo "== App-folder guard: written (new .htaccess)"
+              else
+                echo "::warning::App-folder guard: could not write $F (deploy continues)"
+              fi
+            fi
+            exit 0
+          )
+          guard_app_folder || true
+
           # A failure leaves the site exactly as it is -- DOWN if maintenance
           # mode had started -- and says which, with the way back.
           trap 'if [ -f storage/framework/down ]; then echo "::error::The deploy failed AFTER maintenance mode started. The site was left DOWN on purpose. Rollback copy: $BACKUP. Read the log above (and storage/logs/laravel.log on the host), fix the cause and run this workflow again, or restore the copy and run: php artisan up"; else echo "::error::The deploy failed BEFORE maintenance mode started; the site is still serving the previous release. Rollback copy: $BACKUP."; fi' ERR
@@ -490,3 +522,22 @@ jobs:
           rm -rf "$WORK"
           [ "$FAILED" -eq 0 ] || { echo "::error::Smoke check failed: the deploy is NOT healthy."; exit 1; }
           echo "== Smoke check passed."
+
+      # The application folder must not answer over HTTP. Runs after `php artisan up` and the smoke check, so it can
+      # only turn a finished run red, never leave the site down. Status codes only: nothing is read or printed.
+      # 200 is a leak; 301/302/403/404 are fine (a redirect is the app routing an unknown path to its login).
+      - name: Probe the application folder from outside
+        run: |
+          set -uo pipefail
+          KEY="$(basename "$APP_PATH")"
+          EXPOSED=""
+          for P in .env .env.bak-secrets artisan composer.json composer.lock database/database.sqlite storage/logs/laravel.log vendor/autoload.php phpunit.xml; do
+            CODE=$(curl -s -o /dev/null -m 15 -w '%{http_code}' "$SITE_URL/$KEY/$P" || true)
+            echo "$KEY/$P -> ${CODE:-000}"
+            if [ "$CODE" = "200" ]; then EXPOSED="$EXPOSED $P"; fi
+          done
+          if [ -n "$EXPOSED" ]; then
+            echo "::error::The application folder is readable over HTTP at $SITE_URL/$KEY/ for:$EXPOSED. Put 'Require all denied' in its .htaccess (InfoDot: App Folder Guard workflow) and redeploy."
+            exit 1
+          fi
+          echo "== Application folder not readable over HTTP (9 paths, none answered 200)."
