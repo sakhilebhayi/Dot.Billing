@@ -348,6 +348,39 @@ jobs:
             echo "== docroot build/ did not exist; linked to $APPDIR/public/build"
           fi
 
+          # ---- PHP settings files: carry .user.ini / php.ini into public/ (tolerant, never fails the deploy)
+          # The owner is moving each subdomain's document root from ~/<host>/ to ~/<host>/<app>/public. The old docroot may hold
+          # cPanel/MultiPHP per-directory PHP settings (.user.ini and/or php.ini: upload sizes, memory limits). PHP reads
+          # .user.ini from the directory of the executed script, so after the move they would silently stop applying unless the
+          # files exist in public/. For each of the two names: a regular file in the docroot and nothing at public/<name> ->
+          # copy it with cp -p (never overwrite); already in public/ -> left alone; absent in the docroot -> silent. The docroot
+          # copy is never touched (the live site still uses it until the move) and contents are never printed. The copy is
+          # untracked, so `git reset --hard` leaves it alone, and this script runs no `git clean`. Skipped when the app folder
+          # sits directly in the home folder (no docroot above it), like the app-folder guard.
+          copy_php_ini() (
+            set +e
+            if [ "$DOCROOT" = "$HOME" ]; then echo "== php ini: skipped ($APPDIR is directly in the home folder, no docroot above it)"; exit 0; fi
+            if [ ! -d "$DEPLOY_PATH/public" ]; then echo "== php ini: skipped (no public/ in $APPDIR)"; exit 0; fi
+            for INI in .user.ini php.ini; do
+              SRC="$DOCROOT/$INI"
+              DST="$DEPLOY_PATH/public/$INI"
+              if [ -e "$DST" ] || [ -L "$DST" ]; then
+                if [ -f "$SRC" ] && [ ! -L "$SRC" ]; then echo "== php ini: $INI already in public/ (left alone)"; fi
+                continue
+              fi
+              if [ -f "$SRC" ] && [ ! -L "$SRC" ]; then
+                if cp -p "$SRC" "$DST" 2>/dev/null; then
+                  echo "== php ini: copied $INI to public/"
+                else
+                  rm -f "$DST" 2>/dev/null
+                  echo "::warning::php ini: could not copy $INI to public/ (deploy continues)"
+                fi
+              fi
+            done
+            exit 0
+          )
+          copy_php_ini || true
+
           # ---- database
           echo "== Pending migrations:"
           $PHP artisan migrate:status --pending 2>&1 | tail -25 || true
