@@ -8,6 +8,7 @@ use App\Http\Controllers\Billing\InvoicePaymentController;
 use App\Http\Controllers\Operator\PaymentEventController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Laravel\Fortify\Features;
 use Laravel\Jetstream\Jetstream;
 
 Route::post('/auth/ecosystem', [EcosystemAuthController::class, 'handle'])
@@ -54,3 +55,9 @@ Route::middleware([
         Route::get('/payment-events', [PaymentEventController::class, 'index'])->name('payment-events.index');
     });
 });
+
+// Public sign-up is closed (accounts are created by InfoDot at first sign-in). Keep the named route so any link or
+// invitation email that points at it lands on the login page instead of failing.
+if (! Features::enabled(Features::registration())) {
+    Route::redirect('/register', '/login')->name('register');
+}
