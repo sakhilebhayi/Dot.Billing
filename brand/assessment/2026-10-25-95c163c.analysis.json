@@ -1,0 +1,2082 @@
+{
+  "analysis_version": "1.0.0",
+  "checks": [
+    {
+      "dimension": "emotional_clarity_positioning",
+      "id": "d1.copy_profile_language_lint",
+      "status": "measured",
+      "title": "Copy against the profile's banned phrases and claims policy"
+    },
+    {
+      "dimension": "reliability_error_recovery",
+      "id": "d10.error_pages",
+      "status": "measured",
+      "title": "Designed error pages with a next step"
+    },
+    {
+      "dimension": "reliability_error_recovery",
+      "id": "d10.health_endpoint",
+      "status": "measured",
+      "title": "Health endpoint exists and shows a failure path (static)"
+    },
+    {
+      "dimension": "brand_distinctiveness",
+      "id": "d2.font_palette_deny_list",
+      "status": "measured",
+      "title": "Fonts and palette against the deny-list of generic defaults"
+    },
+    {
+      "dimension": "usability_cognitive_load",
+      "id": "d3.field_counts",
+      "status": "measured",
+      "title": "Fields per form"
+    },
+    {
+      "dimension": "usability_cognitive_load",
+      "id": "d3.heading_structure",
+      "status": "measured",
+      "title": "One h1 and no skipped heading levels per screen"
+    },
+    {
+      "dimension": "usability_cognitive_load",
+      "id": "d3.nav_depth",
+      "status": "measured",
+      "title": "Navigation menu depth"
+    },
+    {
+      "dimension": "visual_interaction_craftsmanship",
+      "id": "d4.reduced_motion",
+      "status": "measured",
+      "title": "Animations and transitions respect prefers-reduced-motion (static)"
+    },
+    {
+      "dimension": "visual_interaction_craftsmanship",
+      "id": "d4.spacing_type_scale_conformance",
+      "status": "not_measured",
+      "title": "Spacing and type size on the declared scales"
+    },
+    {
+      "dimension": "functional_completeness",
+      "id": "d5.dead_links",
+      "status": "measured",
+      "title": "Internal links resolve"
+    },
+    {
+      "dimension": "functional_completeness",
+      "id": "d5.route_inventory_vs_claims",
+      "status": "measured",
+      "title": "Claimed features have a matching route"
+    },
+    {
+      "dimension": "functional_completeness",
+      "id": "d5.stubs_placeholders",
+      "status": "measured",
+      "title": "No stub or placeholder content on shipped surfaces"
+    },
+    {
+      "dimension": "trust_transparency",
+      "id": "d6.claim_lint",
+      "status": "measured",
+      "title": "Unsupported-claim lint over user-facing copy"
+    },
+    {
+      "dimension": "trust_transparency",
+      "id": "d6.honest_states",
+      "status": "not_measured",
+      "title": "Empty, error and unavailable state wording on list screens (presence only)"
+    },
+    {
+      "dimension": "trust_transparency",
+      "id": "d6.privacy_terms_present",
+      "status": "measured",
+      "title": "Privacy notice and terms present, real and linked"
+    },
+    {
+      "dimension": "accessibility_inclusion",
+      "id": "d8.focus_visible",
+      "status": "measured",
+      "title": "Focus indicators not removed; no positive tabindex (static)"
+    },
+    {
+      "dimension": "accessibility_inclusion",
+      "id": "d8.labels_alt_lang",
+      "status": "measured",
+      "title": "Labels, alternative text and language (static)"
+    },
+    {
+      "dimension": "accessibility_inclusion",
+      "id": "d8.token_pair_contrast",
+      "status": "measured",
+      "title": "Token pair contrast (WCAG 2.2) on both themes"
+    },
+    {
+      "dimension": "cross_platform_consistency",
+      "id": "d9.token_usage_vs_profile",
+      "status": "measured",
+      "title": "Values drawn from design tokens rather than hard-coded"
+    }
+  ],
+  "conflicts": [],
+  "counts": {
+    "by_severity": {
+      "blocker": 0,
+      "info": 36,
+      "major": 14,
+      "minor": 46
+    },
+    "checks": 19,
+    "evidence": 17,
+    "findings": 96,
+    "not_measured": 20,
+    "redactions": 0
+  },
+  "coverage": {
+    "skipped": [
+      {
+        "path": ".git",
+        "reason": "vendored_or_generated_directory"
+      },
+      {
+        "path": ".npmrc",
+        "reason": "sensitive_name"
+      },
+      {
+        "path": "bootstrap/cache",
+        "reason": "vendored_or_generated_directory"
+      },
+      {
+        "path": "resources/views/vendor",
+        "reason": "vendored_or_generated_directory"
+      },
+      {
+        "path": "storage/framework",
+        "reason": "vendored_or_generated_directory"
+      }
+    ],
+    "skipped_total": 5
+  },
+  "engine_problems": [],
+  "engine_version": "0.3.0",
+  "evidence": [
+    {
+      "artifact_ref": "static-scan/d1.copy_profile_language_lint",
+      "check_id": "d1.copy_profile_language_lint",
+      "detail": "371 user-facing string(s) scanned against 6 banned phrase(s) of profile dot-ecosystem; 0 string(s) trip a banned phrase or an unsupported-claim pattern and 5 markup claim(s) (claim hits are listed under d6.claim_lint).",
+      "origin": "check:d1.copy_profile_language_lint",
+      "result": "partial",
+      "source_class": "automated_check",
+      "value": 0.9865
+    },
+    {
+      "artifact_ref": "static-scan/d10.error_pages",
+      "check_id": "d10.error_pages",
+      "detail": "5 of 5 error statuses (403, 404, 419, 500, 503) have a custom page with a link or button. Laravel layout: resources/views/errors. Rendering with the right status needs a running app and is not measured.",
+      "origin": "check:d10.error_pages",
+      "result": "pass",
+      "source_class": "automated_check",
+      "value": 1
+    },
+    {
+      "artifact_ref": "bootstrap/app.php",
+      "check_id": "d10.health_endpoint",
+      "detail": "exists: yes (framework health route /up with no DiagnosingHealth listener (it answers 200 whenever the app boots)); answers: not measured (needs a running app); reports failure honestly: not seen. The share is out of three, so it cannot exceed 2/3 statically.",
+      "origin": "check:d10.health_endpoint",
+      "result": "partial",
+      "source_class": "automated_check",
+      "value": 0.3333
+    },
+    {
+      "artifact_ref": "index.html",
+      "check_id": "d2.font_palette_deny_list",
+      "detail": "7 of 9 fonts/palette values are off the deny-list. Fonts found: Poppins, IBM Plex Sans, Fraunces, IBM Plex Mono, Inter, Syne, 12px/1.3 'Inter, JetBrains Mono; the profile writes no hex colour in its prohibited list, so the palette was not evaluated. Matching is by name only.",
+      "origin": "check:d2.font_palette_deny_list",
+      "result": "partial",
+      "source_class": "automated_check",
+      "value": 0.7778
+    },
+    {
+      "artifact_ref": "resources/views/livewire/billing/plan-manager.blade.php",
+      "check_id": "d3.field_counts",
+      "detail": "10 of 11 forms have at most 8 fields (engine default bound; the profile declares none). Whether each field is needed is not measured.",
+      "origin": "check:d3.field_counts",
+      "result": "partial",
+      "source_class": "automated_check",
+      "value": 0.9091
+    },
+    {
+      "artifact_ref": "resources/views/invoices/show.blade.php",
+      "check_id": "d3.heading_structure",
+      "detail": "9 of 11 screens have exactly one <h1> and no skipped level; 24 layout(s) and page(s) that rely on a layout were left out because the outline is split between files. Headings rendered by components or inserted by scripts are not seen.",
+      "origin": "check:d3.heading_structure",
+      "result": "partial",
+      "source_class": "automated_check",
+      "value": 0.8182
+    },
+    {
+      "artifact_ref": "static-scan/d3.nav_depth",
+      "check_id": "d3.nav_depth",
+      "detail": "19 of 19 navigation links are within 3 level(s) (engine default bound; the profile declares none) across 5 <nav> landmark(s). Click paths through pages are not measured.",
+      "origin": "check:d3.nav_depth",
+      "result": "pass",
+      "source_class": "automated_check",
+      "value": 1
+    },
+    {
+      "artifact_ref": "index.html",
+      "check_id": "d4.reduced_motion",
+      "detail": "5 of 36 motion declarations are covered by prefers-reduced-motion (no global override); utility classes counted per element. Motion from JavaScript is not scanned.",
+      "origin": "check:d4.reduced_motion",
+      "result": "partial",
+      "source_class": "automated_check",
+      "value": 0.1389
+    },
+    {
+      "artifact_ref": "static-scan/d5.dead_links",
+      "check_id": "d5.dead_links",
+      "detail": "37 of 37 checkable internal links resolve; 23 link(s) could not be judged statically and are not counted; 7 link(s) sit inside a Route::has() guard for the route they name and are not counted either. 18 route(s) read from 4 file(s) in routes/ plus 2 page(s) the framework registers (Jetstream terms and privacy); package-provided routes (login, register, ...) are treated as unverifiable.",
+      "origin": "check:d5.dead_links",
+      "result": "pass",
+      "source_class": "automated_check",
+      "value": 1
+    },
+    {
+      "artifact_ref": "README.md",
+      "check_id": "d5.route_inventory_vs_claims",
+      "detail": "8 of 12 claimed features share a keyword with 31 route, page or view name word(s). This is a keyword match against names, not a test that the feature works.",
+      "origin": "check:d5.route_inventory_vs_claims",
+      "result": "partial",
+      "source_class": "automated_check",
+      "value": 0.6667
+    },
+    {
+      "artifact_ref": "index.html",
+      "check_id": "d5.stubs_placeholders",
+      "detail": "34 of 35 surfaces with static text are free of visible stub content. Surfaces whose text is all dynamic, and text produced by scripts, are not seen.",
+      "origin": "check:d5.stubs_placeholders",
+      "result": "partial",
+      "source_class": "automated_check",
+      "value": 0.9714
+    },
+    {
+      "artifact_ref": "index.html",
+      "check_id": "d6.claim_lint",
+      "detail": "366 user-facing string(s) scanned; 5 carry a claim or figure and 5 of them are unsupported. Profile dot-ecosystem: 4 claims_policy rule(s), 2 with no pattern detector (no-certainty-theatre, no-unbuilt-features).",
+      "origin": "check:d6.claim_lint",
+      "result": "fail",
+      "source_class": "automated_check",
+      "value": 0
+    },
+    {
+      "artifact_ref": "static-scan/d6.privacy_terms_present",
+      "check_id": "d6.privacy_terms_present",
+      "detail": "6 of 6 conditions hold (privacy and terms: present, not a placeholder, linked from shared markup). \"Reachable from every public page\" is approximated by a link in a layout, footer or partial; content served from a database or a CMS is not seen.",
+      "origin": "check:d6.privacy_terms_present",
+      "result": "pass",
+      "source_class": "automated_check",
+      "value": 1
+    },
+    {
+      "artifact_ref": "resources/views/components/banner.blade.php",
+      "check_id": "d8.focus_visible",
+      "detail": "13 of 15 outline removals or positive tabindex uses are safe (replaced by a visible indicator); the rest are listed. Rendered focus order and indicator visibility are not measured.",
+      "origin": "check:d8.focus_visible",
+      "result": "partial",
+      "source_class": "automated_check",
+      "value": 0.8667
+    },
+    {
+      "artifact_ref": "index.html",
+      "check_id": "d8.labels_alt_lang",
+      "detail": "18/19 form fields labelled (reusable component files are skipped: their consumer supplies the label), 11/11 images with alt, 6/6 documents with lang; 18 element(s) with dynamic attributes and all components were skipped. Title, name, iframe, viewport and ARIA findings do not change this share.",
+      "origin": "check:d8.labels_alt_lang",
+      "result": "partial",
+      "source_class": "automated_check",
+      "value": 0.9722
+    },
+    {
+      "artifact_ref": "index.html",
+      "check_id": "d8.token_pair_contrast",
+      "detail": "11 of 11 pair/theme combinations meet their threshold (4.5:1 text; 3:1 large text and focus indicators); themes evaluated: light; pair sources: usage 11; 22 combination(s) undetermined and not counted; 3 focus ring(s) of particular elements not measured because no background is declared behind them (the page ground is not assumed); translucent backgrounds are undetermined; panel backgrounds are tokens named bg/panel/surface/card/sunken.",
+      "origin": "check:d8.token_pair_contrast",
+      "result": "pass",
+      "source_class": "automated_check",
+      "value": 1
+    },
+    {
+      "artifact_ref": "index.html",
+      "check_id": "d9.token_usage_vs_profile",
+      "detail": "164 of 1119 values come from tokens: colour 163 token / 242 literal / 223 framework-default utility; spacing and type size 1 token / 490 literal; 75 font-family declaration(s) not counted. The profile cites no token source, so any declared custom property counts.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "result": "partial",
+      "source_class": "automated_check",
+      "value": 0.1466
+    }
+  ],
+  "findings": [
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "254f151f1e70",
+      "fix_hint": "Add @media (prefers-reduced-motion: reduce) { ... animation: none } for it, or a global override.",
+      "id": "d4.reduced_motion.254f151f1e70",
+      "location": {
+        "file": "resources/views/layouts/app.blade.php",
+        "line": 42
+      },
+      "message": "An infinite animation on \".live-dot\" has no prefers-reduced-motion override.",
+      "origin": "check:d4.reduced_motion",
+      "severity": "major",
+      "source_id": "d4.reduced_motion.motion-no-reduced-variant.003",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "eda36a957f1c",
+      "fix_hint": "Add @media (prefers-reduced-motion: reduce) { ... animation: none } for it, or a global override.",
+      "id": "d4.reduced_motion.eda36a957f1c",
+      "location": {
+        "file": "resources/views/layouts/app.blade.php",
+        "line": 100
+      },
+      "message": "An infinite animation on \".dot-spin\" has no prefers-reduced-motion override.",
+      "origin": "check:d4.reduced_motion",
+      "severity": "major",
+      "source_id": "d4.reduced_motion.motion-no-reduced-variant.005",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d6.claim_lint",
+      "dimension": "trust_transparency",
+      "fingerprint": "f28c0380a1d5",
+      "fix_hint": "Remove the urgency or scarcity wording unless it is read from real stock or a real deadline.",
+      "id": "d6.claim_lint.f28c0380a1d5",
+      "location": {
+        "file": "index.html",
+        "line": 273
+      },
+      "message": "A countdown timer, which is an urgency pattern.",
+      "origin": "check:d6.claim_lint",
+      "severity": "major",
+      "source_id": "d6.claim_lint.countdown-timer.001"
+    },
+    {
+      "check_id": "d6.claim_lint",
+      "dimension": "trust_transparency",
+      "fingerprint": "f28c0380a1d5.1",
+      "fix_hint": "Remove the urgency or scarcity wording unless it is read from real stock or a real deadline.",
+      "id": "d6.claim_lint.f28c0380a1d5.1",
+      "location": {
+        "file": "index.html",
+        "line": 274
+      },
+      "message": "A countdown timer, which is an urgency pattern.",
+      "origin": "check:d6.claim_lint",
+      "severity": "major",
+      "source_id": "d6.claim_lint.countdown-timer.002"
+    },
+    {
+      "check_id": "d6.claim_lint",
+      "dimension": "trust_transparency",
+      "fingerprint": "f28c0380a1d5.2",
+      "fix_hint": "Remove the urgency or scarcity wording unless it is read from real stock or a real deadline.",
+      "id": "d6.claim_lint.f28c0380a1d5.2",
+      "location": {
+        "file": "index.html",
+        "line": 278
+      },
+      "message": "A countdown timer, which is an urgency pattern.",
+      "origin": "check:d6.claim_lint",
+      "severity": "major",
+      "source_id": "d6.claim_lint.countdown-timer.003"
+    },
+    {
+      "check_id": "d6.claim_lint",
+      "dimension": "trust_transparency",
+      "fingerprint": "f28c0380a1d5.3",
+      "fix_hint": "Remove the urgency or scarcity wording unless it is read from real stock or a real deadline.",
+      "id": "d6.claim_lint.f28c0380a1d5.3",
+      "location": {
+        "file": "index.html",
+        "line": 282
+      },
+      "message": "A countdown timer, which is an urgency pattern.",
+      "origin": "check:d6.claim_lint",
+      "severity": "major",
+      "source_id": "d6.claim_lint.countdown-timer.004"
+    },
+    {
+      "check_id": "d6.claim_lint",
+      "dimension": "trust_transparency",
+      "fingerprint": "f28c0380a1d5.4",
+      "fix_hint": "Remove the urgency or scarcity wording unless it is read from real stock or a real deadline.",
+      "id": "d6.claim_lint.f28c0380a1d5.4",
+      "location": {
+        "file": "index.html",
+        "line": 286
+      },
+      "message": "A countdown timer, which is an urgency pattern.",
+      "origin": "check:d6.claim_lint",
+      "severity": "major",
+      "source_id": "d6.claim_lint.countdown-timer.005"
+    },
+    {
+      "check_id": "d8.focus_visible",
+      "dimension": "accessibility_inclusion",
+      "fingerprint": "a5d68c8e90eb",
+      "fix_hint": "Add focus-visible:ring-2 (or an outline) beside outline-none, or drop outline-none.",
+      "id": "d8.focus_visible.a5d68c8e90eb",
+      "location": {
+        "file": "resources/views/teams/team-member-manager.blade.php",
+        "line": 102
+      },
+      "message": "A <button> removes the outline (outline-none) and its class list has no focus ring, shadow or border to replace it (WCAG 2.4.7).",
+      "origin": "check:d8.focus_visible",
+      "severity": "major",
+      "source_id": "d8.focus_visible.focus-outline-removed.002",
+      "wcag_criterion": "2.4.7",
+      "wcag_level": "AA"
+    },
+    {
+      "check_id": "d8.focus_visible",
+      "dimension": "accessibility_inclusion",
+      "fingerprint": "f5925864f449",
+      "fix_hint": "Add focus-visible:ring-2 (or an outline) beside outline-none, or drop outline-none.",
+      "id": "d8.focus_visible.f5925864f449",
+      "location": {
+        "file": "resources/views/components/banner.blade.php",
+        "line": 35
+      },
+      "message": "A <button> removes the outline (outline-none) and its class list has no focus ring, shadow or border to replace it (WCAG 2.4.7).",
+      "origin": "check:d8.focus_visible",
+      "severity": "major",
+      "source_id": "d8.focus_visible.focus-outline-removed.001",
+      "wcag_criterion": "2.4.7",
+      "wcag_level": "AA"
+    },
+    {
+      "check_id": "d8.labels_alt_lang",
+      "dimension": "accessibility_inclusion",
+      "fingerprint": "302d37512e2b",
+      "fix_hint": "Use a <button> or <a href>.",
+      "id": "d8.labels_alt_lang.302d37512e2b",
+      "location": {
+        "file": "resources/views/components/dropdown.blade.php",
+        "line": 19
+      },
+      "message": "A click handler is attached to a <div> that is not focusable and has no role (WCAG 2.1.1).",
+      "origin": "check:d8.labels_alt_lang",
+      "severity": "major",
+      "source_id": "d8.labels_alt_lang.click-not-keyboard.001",
+      "wcag_criterion": "2.1.1",
+      "wcag_level": "A"
+    },
+    {
+      "check_id": "d8.labels_alt_lang",
+      "dimension": "accessibility_inclusion",
+      "fingerprint": "302d37512e2b.1",
+      "fix_hint": "Use a <button> or <a href>.",
+      "id": "d8.labels_alt_lang.302d37512e2b.1",
+      "location": {
+        "file": "resources/views/components/dropdown.blade.php",
+        "line": 23
+      },
+      "message": "A click handler is attached to a <div> that is not focusable and has no role (WCAG 2.1.1).",
+      "origin": "check:d8.labels_alt_lang",
+      "severity": "major",
+      "source_id": "d8.labels_alt_lang.click-not-keyboard.002",
+      "wcag_criterion": "2.1.1",
+      "wcag_level": "A"
+    },
+    {
+      "check_id": "d8.labels_alt_lang",
+      "dimension": "accessibility_inclusion",
+      "fingerprint": "c039d3ead2dc",
+      "fix_hint": "Use a <button> or <a href>.",
+      "id": "d8.labels_alt_lang.c039d3ead2dc",
+      "location": {
+        "file": "resources/views/livewire/notification-bell.blade.php",
+        "line": 28
+      },
+      "message": "A click handler is attached to a <div> that is not focusable and has no role (WCAG 2.1.1).",
+      "origin": "check:d8.labels_alt_lang",
+      "severity": "major",
+      "source_id": "d8.labels_alt_lang.click-not-keyboard.003",
+      "wcag_criterion": "2.1.1",
+      "wcag_level": "A"
+    },
+    {
+      "check_id": "d8.labels_alt_lang",
+      "dimension": "accessibility_inclusion",
+      "fingerprint": "ceaaa584b34d",
+      "fix_hint": "Add a visible <label for=\"id\"> (preferred) or an aria-label. If the label lives in another file, this finding is a false positive.",
+      "id": "d8.labels_alt_lang.ceaaa584b34d",
+      "location": {
+        "file": "index.html",
+        "line": 294
+      },
+      "message": "A <input> has no associated label: no <label for>, no enclosing <label>, no aria-label or aria-labelledby (a placeholder is not a label) (WCAG 1.3.1, 3.3.2, 4.1.2).",
+      "origin": "check:d8.labels_alt_lang",
+      "severity": "major",
+      "source_id": "d8.labels_alt_lang.control-no-label.001",
+      "wcag_criterion": "3.3.2",
+      "wcag_level": "A"
+    },
+    {
+      "check_id": "d8.labels_alt_lang",
+      "dimension": "accessibility_inclusion",
+      "fingerprint": "f709925ad36b",
+      "fix_hint": "Add visible text, or aria-label for an icon-only control.",
+      "id": "d8.labels_alt_lang.f709925ad36b",
+      "location": {
+        "file": "resources/views/navigation-menu.blade.php",
+        "line": 129
+      },
+      "message": "A button has no accessible name: no text, aria-label, title, or labelled image or icon inside (WCAG 4.1.2, 2.4.4).",
+      "origin": "check:d8.labels_alt_lang",
+      "severity": "major",
+      "source_id": "d8.labels_alt_lang.name-missing.001",
+      "wcag_criterion": "4.1.2",
+      "wcag_level": "A"
+    },
+    {
+      "check_id": "d10.health_endpoint",
+      "dimension": "reliability_error_recovery",
+      "fingerprint": "7676022d7f13",
+      "fix_hint": "Make the endpoint return a 503 when the database or another required dependency fails, so monitoring is told the truth.",
+      "id": "d10.health_endpoint.7676022d7f13",
+      "location": {
+        "file": "bootstrap/app.php",
+        "line": 15
+      },
+      "message": "The health endpoint (framework health route /up with no DiagnosingHealth listener (it answers 200 whenever the app boots)) shows no failure path: no 5xx status, exception handling or dependency probe was found in its handler.",
+      "origin": "check:d10.health_endpoint",
+      "severity": "minor",
+      "source_id": "d10.health_endpoint.health-failure-path-not-seen.001"
+    },
+    {
+      "check_id": "d2.font_palette_deny_list",
+      "dimension": "brand_distinctiveness",
+      "fingerprint": "428ac5b07ca9",
+      "fix_hint": "Choose a typeface that the product's DESIGN.md records, or record why this one is the right choice.",
+      "id": "d2.font_palette_deny_list.428ac5b07ca9",
+      "location": {
+        "file": "resources/views/layouts/app.blade.php",
+        "line": 32
+      },
+      "message": "The font \"Inter\" is a browser, OS or starter-kit default (font-family), not a chosen typeface.",
+      "origin": "check:d2.font_palette_deny_list",
+      "severity": "minor",
+      "source_id": "d2.font_palette_deny_list.font-on-deny-list.002"
+    },
+    {
+      "check_id": "d2.font_palette_deny_list",
+      "dimension": "brand_distinctiveness",
+      "fingerprint": "7dbf6eb689f7",
+      "fix_hint": "Choose a typeface that the product's DESIGN.md records, or record why this one is the right choice.",
+      "id": "d2.font_palette_deny_list.7dbf6eb689f7",
+      "location": {
+        "file": "index.html",
+        "line": 31
+      },
+      "message": "The font \"Poppins\" is a browser, OS or starter-kit default (font-family), not a chosen typeface.",
+      "origin": "check:d2.font_palette_deny_list",
+      "severity": "minor",
+      "source_id": "d2.font_palette_deny_list.font-on-deny-list.001"
+    },
+    {
+      "check_id": "d3.field_counts",
+      "dimension": "usability_cognitive_load",
+      "fingerprint": "c197d2982aef",
+      "fix_hint": "Ask only for what the task needs now; split the form or make fields optional.",
+      "id": "d3.field_counts.c197d2982aef",
+      "location": {
+        "file": "resources/views/livewire/billing/plan-manager.blade.php",
+        "line": 45
+      },
+      "message": "A form has 10 fields (bound 8).",
+      "origin": "check:d3.field_counts",
+      "severity": "minor",
+      "source_id": "d3.field_counts.form-too-many-fields.001"
+    },
+    {
+      "check_id": "d3.heading_structure",
+      "dimension": "usability_cognitive_load",
+      "fingerprint": "00fc47408138",
+      "fix_hint": "Give the screen one <h1> naming the page.",
+      "id": "d3.heading_structure.00fc47408138",
+      "location": {
+        "file": "resources/views/profile/two-factor-authentication-form.blade.php",
+        "line": 11
+      },
+      "message": "The screen has headings but no <h1>.",
+      "origin": "check:d3.heading_structure",
+      "severity": "minor",
+      "source_id": "d3.heading_structure.h1-missing.001",
+      "wcag_criterion": "1.3.1",
+      "wcag_level": "A"
+    },
+    {
+      "check_id": "d3.heading_structure",
+      "dimension": "usability_cognitive_load",
+      "fingerprint": "90403010af92",
+      "fix_hint": "Use h2 here, or restructure the headings.",
+      "id": "d3.heading_structure.90403010af92",
+      "location": {
+        "file": "resources/views/invoices/show.blade.php",
+        "line": 53
+      },
+      "message": "Heading level jumps from h1 to h3.",
+      "origin": "check:d3.heading_structure",
+      "severity": "minor",
+      "source_id": "d3.heading_structure.heading-skip.001",
+      "wcag_criterion": "1.3.1",
+      "wcag_level": "A"
+    },
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "1fd25e9243a2",
+      "fix_hint": "Add one global @media (prefers-reduced-motion: reduce) rule that shortens transitions and animations, or per-selector overrides.",
+      "id": "d4.reduced_motion.1fd25e9243a2",
+      "location": {
+        "file": "index.html",
+        "line": 171
+      },
+      "message": "3 transition/animation declaration(s) have no prefers-reduced-motion override; first: \".notify-form input[type=\"email\"]\".",
+      "origin": "check:d4.reduced_motion",
+      "severity": "minor",
+      "source_id": "d4.reduced_motion.motion-no-reduced-variant.001",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "4554e6415235",
+      "fix_hint": "Add motion-reduce:transition-none / motion-reduce:animate-none, or a global reduced-motion rule.",
+      "id": "d4.reduced_motion.4554e6415235",
+      "location": {
+        "file": "resources/views/welcome.blade.php",
+        "line": 93
+      },
+      "message": "Utility class \"transition-colors\" animates with no motion-reduce: variant and no global override.",
+      "origin": "check:d4.reduced_motion",
+      "severity": "minor",
+      "source_id": "d4.reduced_motion.motion-utility-no-variant.007",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "4554e6415235.1",
+      "fix_hint": "Add motion-reduce:transition-none / motion-reduce:animate-none, or a global reduced-motion rule.",
+      "id": "d4.reduced_motion.4554e6415235.1",
+      "location": {
+        "file": "resources/views/welcome.blade.php",
+        "line": 97
+      },
+      "message": "Utility class \"transition-colors\" animates with no motion-reduce: variant and no global override.",
+      "origin": "check:d4.reduced_motion",
+      "severity": "minor",
+      "source_id": "d4.reduced_motion.motion-utility-no-variant.008",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "4554e6415235.2",
+      "fix_hint": "Add motion-reduce:transition-none / motion-reduce:animate-none, or a global reduced-motion rule.",
+      "id": "d4.reduced_motion.4554e6415235.2",
+      "location": {
+        "file": "resources/views/welcome.blade.php",
+        "line": 101
+      },
+      "message": "Utility class \"transition-colors\" animates with no motion-reduce: variant and no global override.",
+      "origin": "check:d4.reduced_motion",
+      "severity": "minor",
+      "source_id": "d4.reduced_motion.motion-utility-no-variant.009",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "4554e6415235.3",
+      "fix_hint": "Add motion-reduce:transition-none / motion-reduce:animate-none, or a global reduced-motion rule.",
+      "id": "d4.reduced_motion.4554e6415235.3",
+      "location": {
+        "file": "resources/views/welcome.blade.php",
+        "line": 164
+      },
+      "message": "Utility class \"transition-colors\" animates with no motion-reduce: variant and no global override.",
+      "origin": "check:d4.reduced_motion",
+      "severity": "minor",
+      "source_id": "d4.reduced_motion.motion-utility-no-variant.010",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "4554e6415235.4",
+      "fix_hint": "Add motion-reduce:transition-none / motion-reduce:animate-none, or a global reduced-motion rule.",
+      "id": "d4.reduced_motion.4554e6415235.4",
+      "location": {
+        "file": "resources/views/welcome.blade.php",
+        "line": 275
+      },
+      "message": "Utility class \"transition-colors\" animates with no motion-reduce: variant and no global override.",
+      "origin": "check:d4.reduced_motion",
+      "severity": "minor",
+      "source_id": "d4.reduced_motion.motion-utility-no-variant.011",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "4554e6415235.5",
+      "fix_hint": "Add motion-reduce:transition-none / motion-reduce:animate-none, or a global reduced-motion rule.",
+      "id": "d4.reduced_motion.4554e6415235.5",
+      "location": {
+        "file": "resources/views/welcome.blade.php",
+        "line": 321
+      },
+      "message": "Utility class \"transition-colors\" animates with no motion-reduce: variant and no global override.",
+      "origin": "check:d4.reduced_motion",
+      "severity": "minor",
+      "source_id": "d4.reduced_motion.motion-utility-no-variant.012",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "4554e6415235.6",
+      "fix_hint": "Add motion-reduce:transition-none / motion-reduce:animate-none, or a global reduced-motion rule.",
+      "id": "d4.reduced_motion.4554e6415235.6",
+      "location": {
+        "file": "resources/views/welcome.blade.php",
+        "line": 336
+      },
+      "message": "Utility class \"transition-colors\" animates with no motion-reduce: variant and no global override.",
+      "origin": "check:d4.reduced_motion",
+      "severity": "minor",
+      "source_id": "d4.reduced_motion.motion-utility-no-variant.013",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "4554e6415235.7",
+      "fix_hint": "Add motion-reduce:transition-none / motion-reduce:animate-none, or a global reduced-motion rule.",
+      "id": "d4.reduced_motion.4554e6415235.7",
+      "location": {
+        "file": "resources/views/welcome.blade.php",
+        "line": 337
+      },
+      "message": "Utility class \"transition-colors\" animates with no motion-reduce: variant and no global override.",
+      "origin": "check:d4.reduced_motion",
+      "severity": "minor",
+      "source_id": "d4.reduced_motion.motion-utility-no-variant.014",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "4554e6415235.8",
+      "fix_hint": "Add motion-reduce:transition-none / motion-reduce:animate-none, or a global reduced-motion rule.",
+      "id": "d4.reduced_motion.4554e6415235.8",
+      "location": {
+        "file": "resources/views/welcome.blade.php",
+        "line": 338
+      },
+      "message": "Utility class \"transition-colors\" animates with no motion-reduce: variant and no global override.",
+      "origin": "check:d4.reduced_motion",
+      "severity": "minor",
+      "source_id": "d4.reduced_motion.motion-utility-no-variant.015",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "4cee173b31a9",
+      "fix_hint": "Add one global @media (prefers-reduced-motion: reduce) rule that shortens transitions and animations, or per-selector overrides.",
+      "id": "d4.reduced_motion.4cee173b31a9",
+      "location": {
+        "file": "resources/views/layouts/guest.blade.php",
+        "line": 45
+      },
+      "message": "1 transition/animation declaration(s) have no prefers-reduced-motion override; first: \".press\".",
+      "origin": "check:d4.reduced_motion",
+      "severity": "minor",
+      "source_id": "d4.reduced_motion.motion-no-reduced-variant.006",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "4e0bd181ca33",
+      "fix_hint": "Add motion-reduce:transition-none / motion-reduce:animate-none, or a global reduced-motion rule.",
+      "id": "d4.reduced_motion.4e0bd181ca33",
+      "location": {
+        "file": "resources/views/components/banner.blade.php",
+        "line": 35
+      },
+      "message": "Utility class \"transition\" animates with no motion-reduce: variant and no global override.",
+      "origin": "check:d4.reduced_motion",
+      "severity": "minor",
+      "source_id": "d4.reduced_motion.motion-utility-no-variant.001",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "52f3b4746357",
+      "fix_hint": "Add one global @media (prefers-reduced-motion: reduce) rule that shortens transitions and animations, or per-selector overrides.",
+      "id": "d4.reduced_motion.52f3b4746357",
+      "location": {
+        "file": "resources/views/welcome.blade.php",
+        "line": 43
+      },
+      "message": "2 transition/animation declaration(s) have no prefers-reduced-motion override; first: \".press\".",
+      "origin": "check:d4.reduced_motion",
+      "severity": "minor",
+      "source_id": "d4.reduced_motion.motion-no-reduced-variant.007",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "53e400b273e8",
+      "fix_hint": "Add motion-reduce:transition-none / motion-reduce:animate-none, or a global reduced-motion rule.",
+      "id": "d4.reduced_motion.53e400b273e8",
+      "location": {
+        "file": "resources/views/navigation-menu.blade.php",
+        "line": 28
+      },
+      "message": "Utility class \"transition\" animates with no motion-reduce: variant and no global override.",
+      "origin": "check:d4.reduced_motion",
+      "severity": "minor",
+      "source_id": "d4.reduced_motion.motion-utility-no-variant.003",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "53e400b273e8.1",
+      "fix_hint": "Add motion-reduce:transition-none / motion-reduce:animate-none, or a global reduced-motion rule.",
+      "id": "d4.reduced_motion.53e400b273e8.1",
+      "location": {
+        "file": "resources/views/navigation-menu.blade.php",
+        "line": 79
+      },
+      "message": "Utility class \"transition\" animates with no motion-reduce: variant and no global override.",
+      "origin": "check:d4.reduced_motion",
+      "severity": "minor",
+      "source_id": "d4.reduced_motion.motion-utility-no-variant.004",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "53e400b273e8.2",
+      "fix_hint": "Add motion-reduce:transition-none / motion-reduce:animate-none, or a global reduced-motion rule.",
+      "id": "d4.reduced_motion.53e400b273e8.2",
+      "location": {
+        "file": "resources/views/navigation-menu.blade.php",
+        "line": 84
+      },
+      "message": "Utility class \"transition\" animates with no motion-reduce: variant and no global override.",
+      "origin": "check:d4.reduced_motion",
+      "severity": "minor",
+      "source_id": "d4.reduced_motion.motion-utility-no-variant.005",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "53e400b273e8.3",
+      "fix_hint": "Add motion-reduce:transition-none / motion-reduce:animate-none, or a global reduced-motion rule.",
+      "id": "d4.reduced_motion.53e400b273e8.3",
+      "location": {
+        "file": "resources/views/navigation-menu.blade.php",
+        "line": 129
+      },
+      "message": "Utility class \"transition\" animates with no motion-reduce: variant and no global override.",
+      "origin": "check:d4.reduced_motion",
+      "severity": "minor",
+      "source_id": "d4.reduced_motion.motion-utility-no-variant.006",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "5c823c097b70",
+      "fix_hint": "Add motion-reduce:transition-none / motion-reduce:animate-none, or a global reduced-motion rule.",
+      "id": "d4.reduced_motion.5c823c097b70",
+      "location": {
+        "file": "resources/views/components/modal.blade.php",
+        "line": 24
+      },
+      "message": "Utility class \"transition-all\" animates with no motion-reduce: variant and no global override.",
+      "origin": "check:d4.reduced_motion",
+      "severity": "minor",
+      "source_id": "d4.reduced_motion.motion-utility-no-variant.002",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "6a64089c5076",
+      "fix_hint": "Add one global @media (prefers-reduced-motion: reduce) rule that shortens transitions and animations, or per-selector overrides.",
+      "id": "d4.reduced_motion.6a64089c5076",
+      "location": {
+        "file": "resources/views/layouts/app.blade.php",
+        "line": 49
+      },
+      "message": "6 transition/animation declaration(s) have no prefers-reduced-motion override; first: \".nav-item\".",
+      "origin": "check:d4.reduced_motion",
+      "severity": "minor",
+      "source_id": "d4.reduced_motion.motion-no-reduced-variant.004",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d4.reduced_motion",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "ffa1d3bc7ed6",
+      "fix_hint": "Add one global @media (prefers-reduced-motion: reduce) rule that shortens transitions and animations, or per-selector overrides.",
+      "id": "d4.reduced_motion.ffa1d3bc7ed6",
+      "location": {
+        "file": "resources/views/errors/_ecosystem-layout.blade.php",
+        "line": 87
+      },
+      "message": "2 transition/animation declaration(s) have no prefers-reduced-motion override; first: \".press\".",
+      "origin": "check:d4.reduced_motion",
+      "severity": "minor",
+      "source_id": "d4.reduced_motion.motion-no-reduced-variant.002",
+      "wcag_criterion": "2.3.3",
+      "wcag_level": "AAA"
+    },
+    {
+      "check_id": "d5.route_inventory_vs_claims",
+      "dimension": "functional_completeness",
+      "fingerprint": "0505195bb63c",
+      "fix_hint": "Check that the feature is built and reachable; if it is not, remove it from the feature list. If it is, a route or page name that does not contain the keyword is a false positive.",
+      "id": "d5.route_inventory_vs_claims.0505195bb63c",
+      "location": {
+        "file": "README.md",
+        "line": 37
+      },
+      "message": "The claimed feature \"AI spend analysis (Claude), shown only when the call really worked\" shares no keyword with any route, page or view name (spend, analysis, claude, shown).",
+      "origin": "check:d5.route_inventory_vs_claims",
+      "severity": "minor",
+      "source_id": "d5.route_inventory_vs_claims.claim-without-route.004"
+    },
+    {
+      "check_id": "d5.route_inventory_vs_claims",
+      "dimension": "functional_completeness",
+      "fingerprint": "35b4c56fc6ac",
+      "fix_hint": "Check that the feature is built and reachable; if it is not, remove it from the feature list. If it is, a route or page name that does not contain the keyword is a false positive.",
+      "id": "d5.route_inventory_vs_claims.35b4c56fc6ac",
+      "location": {
+        "file": "README.md",
+        "line": 30
+      },
+      "message": "The claimed feature \"Money in integer minor units (cents); totals are always per currency, never summ\" shares no keyword with any route, page or view name (money, integer, minor, unit).",
+      "origin": "check:d5.route_inventory_vs_claims",
+      "severity": "minor",
+      "source_id": "d5.route_inventory_vs_claims.claim-without-route.002"
+    },
+    {
+      "check_id": "d5.route_inventory_vs_claims",
+      "dimension": "functional_completeness",
+      "fingerprint": "9238797120a0",
+      "fix_hint": "Check that the feature is built and reachable; if it is not, remove it from the feature list. If it is, a route or page name that does not contain the keyword is a false positive.",
+      "id": "d5.route_inventory_vs_claims.9238797120a0",
+      "location": {
+        "file": "README.md",
+        "line": 36
+      },
+      "message": "The claimed feature \"Dark / light mode toggle (Tailwind class-based strategy, persisted per browser)\" shares no keyword with any route, page or view name (dark, light, mode, toggle).",
+      "origin": "check:d5.route_inventory_vs_claims",
+      "severity": "minor",
+      "source_id": "d5.route_inventory_vs_claims.claim-without-route.003"
+    },
+    {
+      "check_id": "d5.route_inventory_vs_claims",
+      "dimension": "functional_completeness",
+      "fingerprint": "a3cf76e716ef",
+      "fix_hint": "Check that the feature is built and reachable; if it is not, remove it from the feature list. If it is, a route or page name that does not contain the keyword is a false positive.",
+      "id": "d5.route_inventory_vs_claims.a3cf76e716ef",
+      "location": {
+        "file": "README.md",
+        "line": 27
+      },
+      "message": "The claimed feature \"Subscriptions\" shares no keyword with any route, page or view name (subscription).",
+      "origin": "check:d5.route_inventory_vs_claims",
+      "severity": "minor",
+      "source_id": "d5.route_inventory_vs_claims.claim-without-route.001"
+    },
+    {
+      "check_id": "d5.stubs_placeholders",
+      "dimension": "functional_completeness",
+      "fingerprint": "5da3f85b93a0",
+      "fix_hint": "If the feature is not built, say so plainly and do not link to it; otherwise remove the notice.",
+      "id": "d5.stubs_placeholders.5da3f85b93a0",
+      "location": {
+        "file": "index.html",
+        "line": 6
+      },
+      "message": "A \"coming soon\" or \"under construction\" notice: \"dot.projects — Coming Soon\".",
+      "origin": "check:d5.stubs_placeholders",
+      "severity": "minor",
+      "source_id": "d5.stubs_placeholders.coming-soon.001"
+    },
+    {
+      "check_id": "d5.stubs_placeholders",
+      "dimension": "functional_completeness",
+      "fingerprint": "e79ea58d8fd6",
+      "fix_hint": "If the feature is not built, say so plainly and do not link to it; otherwise remove the notice.",
+      "id": "d5.stubs_placeholders.e79ea58d8fd6",
+      "location": {
+        "file": "index.html",
+        "line": 265
+      },
+      "message": "A \"coming soon\" or \"under construction\" notice: \"coming soon.\".",
+      "origin": "check:d5.stubs_placeholders",
+      "severity": "minor",
+      "source_id": "d5.stubs_placeholders.coming-soon.002"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "32acdae8a7f3",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.32acdae8a7f3",
+      "location": {
+        "file": "resources/views/welcome.blade.php",
+        "line": 59
+      },
+      "message": "11 hard-coded colour literal(s) against 78 token reference(s); first: rgba(30, 32, 25, 0.025).",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "minor",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.030"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "3efec0ee07b7",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.3efec0ee07b7",
+      "location": {
+        "file": "resources/views/livewire/billing/billing-overview.blade.php",
+        "line": 24
+      },
+      "message": "10 hard-coded colour literal(s) against 0 token reference(s); first: #818cf8.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "minor",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.019"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "59aa1886851c",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.59aa1886851c",
+      "location": {
+        "file": "resources/views/layouts/app.blade.php",
+        "line": 32
+      },
+      "message": "117 hard-coded colour literal(s) against 0 token reference(s); first: #09090b.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "minor",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.017"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "961332ea344f",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.961332ea344f",
+      "location": {
+        "file": "resources/views/errors/_ecosystem-layout.blade.php",
+        "line": 83
+      },
+      "message": "7 hard-coded colour literal(s) against 12 token reference(s); first: #585c4e.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "minor",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.013"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "9e66383d3bcf",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.9e66383d3bcf",
+      "location": {
+        "file": "resources/views/livewire/billing/usage-dashboard.blade.php",
+        "line": 13
+      },
+      "message": "10 hard-coded colour literal(s) against 0 token reference(s); first: rgba(129,140,248,0.2).",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "minor",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.024"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "a4db9a8df39b",
+      "fix_hint": "Use one token for both, or make the difference deliberate and visible.",
+      "id": "d9.token_usage_vs_profile.a4db9a8df39b",
+      "location": {
+        "file": "resources/views/errors/403.blade.php",
+        "line": 11
+      },
+      "message": "Colour literals #1a1a1f (resources/views/layouts/app.blade.php:98) and #1e2019 (resources/views/errors/403.blade.php:11) differ by at most 6/255 per channel.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "minor",
+      "source_id": "d9.token_usage_vs_profile.near-duplicate-colours.001"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "b5056c46f0dd",
+      "fix_hint": "Use one token for both, or make the difference deliberate and visible.",
+      "id": "d9.token_usage_vs_profile.b5056c46f0dd",
+      "location": {
+        "file": "resources/views/layouts/app.blade.php",
+        "line": 35
+      },
+      "message": "Colour literals #111111 (resources/views/invoices/print.blade.php:11) and #0d0d10 (resources/views/layouts/app.blade.php:35) differ by at most 4/255 per channel.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "minor",
+      "source_id": "d9.token_usage_vs_profile.near-duplicate-colours.003"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "bda53dd06d32",
+      "fix_hint": "Use one token for both, or make the difference deliberate and visible.",
+      "id": "d9.token_usage_vs_profile.bda53dd06d32",
+      "location": {
+        "file": "resources/views/layouts/app.blade.php",
+        "line": 57
+      },
+      "message": "Colour literals #555555 (resources/views/invoices/print.blade.php:16) and #52525b (resources/views/layouts/app.blade.php:57) differ by at most 6/255 per channel.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "minor",
+      "source_id": "d9.token_usage_vs_profile.near-duplicate-colours.004"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "c4a3620938ec",
+      "fix_hint": "Use one token for both, or make the difference deliberate and visible.",
+      "id": "d9.token_usage_vs_profile.c4a3620938ec",
+      "location": {
+        "file": "resources/views/layouts/app.blade.php",
+        "line": 35
+      },
+      "message": "Colour literals #09090b (resources/views/layouts/app.blade.php:32) and #0d0d10 (resources/views/layouts/app.blade.php:35) differ by at most 5/255 per channel.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "minor",
+      "source_id": "d9.token_usage_vs_profile.near-duplicate-colours.002"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "cc11de72edcf",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.cc11de72edcf",
+      "location": {
+        "file": "resources/views/livewire/notification-bell.blade.php",
+        "line": 5
+      },
+      "message": "13 hard-coded colour literal(s) against 0 token reference(s); first: #ef4444.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "minor",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.025"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "d8e1558c39a4",
+      "fix_hint": "Use one token for both, or make the difference deliberate and visible.",
+      "id": "d9.token_usage_vs_profile.d8e1558c39a4",
+      "location": {
+        "file": "resources/views/layouts/app.blade.php",
+        "line": 85
+      },
+      "message": "Colour literals #111111 (resources/views/invoices/print.blade.php:11) and #141416 (resources/views/layouts/app.blade.php:85) differ by at most 5/255 per channel.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "minor",
+      "source_id": "d9.token_usage_vs_profile.near-duplicate-colours.005"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "dcdd5d3a361a",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.dcdd5d3a361a",
+      "location": {
+        "file": "resources/views/livewire/billing/payment-reliability.blade.php",
+        "line": 2
+      },
+      "message": "7 hard-coded colour literal(s) against 0 token reference(s); first: #f4f4f5.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "minor",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.022"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "ed75716172d9",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.ed75716172d9",
+      "location": {
+        "file": "index.html",
+        "line": 55
+      },
+      "message": "7 hard-coded colour literal(s) against 19 token reference(s); first: rgba(245,197,24,.12).",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "minor",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.001"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "f655e2c2b51d",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.f655e2c2b51d",
+      "location": {
+        "file": "resources/views/invoices/print.blade.php",
+        "line": 11
+      },
+      "message": "16 hard-coded colour literal(s) against 0 token reference(s); first: #e7e7e4.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "minor",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.015"
+    },
+    {
+      "check_id": "d4.spacing_type_scale_conformance",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "0a2ec7d2126e",
+      "fix_hint": "Supply what is missing, or accept that this check cannot judge this repository; it counts as zero in the score, visibly.",
+      "id": "d4.spacing_type_scale_conformance.0a2ec7d2126e",
+      "message": "Not measured: no spacing or type scale is declared (no --space-*, --spacing-*, --text-*, --font-size-* custom properties and no spacing/typography in DESIGN.md front matter), so there is nothing to conform to.",
+      "origin": "check:d4.spacing_type_scale_conformance",
+      "severity": "info",
+      "source_id": "d4.spacing_type_scale_conformance.not-measured.001"
+    },
+    {
+      "check_id": "d4.spacing_type_scale_conformance",
+      "dimension": "visual_interaction_craftsmanship",
+      "fingerprint": "a922a8383bd8",
+      "fix_hint": "Declare the scales as custom properties (--space-1.., --text-sm..) or in the DESIGN.md spacing and typography tables.",
+      "id": "d4.spacing_type_scale_conformance.a922a8383bd8",
+      "location": {
+        "file": "resources/css/app.css",
+        "line": 1
+      },
+      "message": "No spacing scale and no type scale are declared as tokens, so spacing and type size cannot be checked for consistency.",
+      "origin": "check:d4.spacing_type_scale_conformance",
+      "severity": "info",
+      "source_id": "d4.spacing_type_scale_conformance.no-scale-declared.001"
+    },
+    {
+      "check_id": "d5.stubs_placeholders",
+      "dimension": "functional_completeness",
+      "fingerprint": "424c7c3d9fb6",
+      "fix_hint": "Resolve it or move it to the issue tracker.",
+      "id": "d5.stubs_placeholders.424c7c3d9fb6",
+      "location": {
+        "file": "resources/views/layouts/app.blade.php",
+        "line": 189
+      },
+      "message": "A TODO/FIXME note in a template comment (not visible to visitors).",
+      "origin": "check:d5.stubs_placeholders",
+      "severity": "info",
+      "source_id": "d5.stubs_placeholders.todo-comment.001"
+    },
+    {
+      "check_id": "d6.honest_states",
+      "dimension": "trust_transparency",
+      "fingerprint": "1fcb18d04649",
+      "fix_hint": "Check by hand that the wording says what is true and shows no invented data.",
+      "id": "d6.honest_states.1fcb18d04649",
+      "location": {
+        "file": "resources/views/invoices/show.blade.php",
+        "line": 1
+      },
+      "message": "List screen: wording or a branch for an empty list is present. Whether it is true is not assessed.",
+      "origin": "check:d6.honest_states",
+      "severity": "info",
+      "source_id": "d6.honest_states.list-empty-state-present.002"
+    },
+    {
+      "check_id": "d6.honest_states",
+      "dimension": "trust_transparency",
+      "fingerprint": "30dd0377bcd9",
+      "fix_hint": "Check by hand that the wording says what is true and shows no invented data.",
+      "id": "d6.honest_states.30dd0377bcd9",
+      "location": {
+        "file": "resources/views/dashboard.blade.php",
+        "line": 1
+      },
+      "message": "List screen: wording or a branch for an empty list is present. Whether it is true is not assessed.",
+      "origin": "check:d6.honest_states",
+      "severity": "info",
+      "source_id": "d6.honest_states.list-empty-state-present.001"
+    },
+    {
+      "check_id": "d6.honest_states",
+      "dimension": "trust_transparency",
+      "fingerprint": "3a32ac80076a",
+      "fix_hint": "Say plainly what an empty, failed or unavailable list means and what to do next.",
+      "id": "d6.honest_states.3a32ac80076a",
+      "location": {
+        "file": "resources/views/navigation-menu.blade.php",
+        "line": 1
+      },
+      "message": "List screen: no wording or branch for an empty list was found, and no error/unavailable wording.",
+      "origin": "check:d6.honest_states",
+      "severity": "info",
+      "source_id": "d6.honest_states.list-empty-state-absent.003"
+    },
+    {
+      "check_id": "d6.honest_states",
+      "dimension": "trust_transparency",
+      "fingerprint": "4ad0b644c0e9",
+      "fix_hint": "Supply what is missing, or accept that this check cannot judge this repository; it counts as zero in the score, visibly.",
+      "id": "d6.honest_states.4ad0b644c0e9",
+      "message": "Not measured: 11 list screen(s) were inspected for empty/error wording; whether states are honest and show no invented data needs a person or a rendered page, so no share is produced.",
+      "origin": "check:d6.honest_states",
+      "severity": "info",
+      "source_id": "d6.honest_states.not-measured.001"
+    },
+    {
+      "check_id": "d6.honest_states",
+      "dimension": "trust_transparency",
+      "fingerprint": "57931058cbf7",
+      "fix_hint": "Say plainly what an empty, failed or unavailable list means and what to do next.",
+      "id": "d6.honest_states.57931058cbf7",
+      "location": {
+        "file": "resources/views/welcome.blade.php",
+        "line": 1
+      },
+      "message": "List screen: no wording or branch for an empty list was found, and no error/unavailable wording.",
+      "origin": "check:d6.honest_states",
+      "severity": "info",
+      "source_id": "d6.honest_states.list-empty-state-absent.007"
+    },
+    {
+      "check_id": "d6.honest_states",
+      "dimension": "trust_transparency",
+      "fingerprint": "62581e30e80d",
+      "fix_hint": "Say plainly what an empty, failed or unavailable list means and what to do next.",
+      "id": "d6.honest_states.62581e30e80d",
+      "location": {
+        "file": "resources/views/profile/logout-other-browser-sessions-form.blade.php",
+        "line": 1
+      },
+      "message": "List screen: no wording or branch for an empty list was found, and no error/unavailable wording.",
+      "origin": "check:d6.honest_states",
+      "severity": "info",
+      "source_id": "d6.honest_states.list-empty-state-absent.004"
+    },
+    {
+      "check_id": "d6.honest_states",
+      "dimension": "trust_transparency",
+      "fingerprint": "7d2e5b5fa0e6",
+      "fix_hint": "Say plainly what an empty, failed or unavailable list means and what to do next.",
+      "id": "d6.honest_states.7d2e5b5fa0e6",
+      "location": {
+        "file": "resources/views/teams/team-member-manager.blade.php",
+        "line": 1
+      },
+      "message": "List screen: no wording or branch for an empty list was found, and no error/unavailable wording.",
+      "origin": "check:d6.honest_states",
+      "severity": "info",
+      "source_id": "d6.honest_states.list-empty-state-absent.006"
+    },
+    {
+      "check_id": "d6.honest_states",
+      "dimension": "trust_transparency",
+      "fingerprint": "a91470634f61",
+      "fix_hint": "Say plainly what an empty, failed or unavailable list means and what to do next.",
+      "id": "d6.honest_states.a91470634f61",
+      "location": {
+        "file": "resources/views/invoices/print.blade.php",
+        "line": 1
+      },
+      "message": "List screen: no wording or branch for an empty list was found, and no error/unavailable wording.",
+      "origin": "check:d6.honest_states",
+      "severity": "info",
+      "source_id": "d6.honest_states.list-empty-state-absent.002"
+    },
+    {
+      "check_id": "d6.honest_states",
+      "dimension": "trust_transparency",
+      "fingerprint": "be95e76dd26e",
+      "fix_hint": "Say plainly what an empty, failed or unavailable list means and what to do next.",
+      "id": "d6.honest_states.be95e76dd26e",
+      "location": {
+        "file": "resources/views/api/api-token-manager.blade.php",
+        "line": 1
+      },
+      "message": "List screen: no wording or branch for an empty list was found, and no error/unavailable wording.",
+      "origin": "check:d6.honest_states",
+      "severity": "info",
+      "source_id": "d6.honest_states.list-empty-state-absent.001"
+    },
+    {
+      "check_id": "d6.honest_states",
+      "dimension": "trust_transparency",
+      "fingerprint": "c79fb3316793",
+      "fix_hint": "Check by hand that the wording says what is true and shows no invented data.",
+      "id": "d6.honest_states.c79fb3316793",
+      "location": {
+        "file": "resources/views/operator/payment-events.blade.php",
+        "line": 1
+      },
+      "message": "List screen: wording or a branch for an empty list is present. Whether it is true is not assessed.",
+      "origin": "check:d6.honest_states",
+      "severity": "info",
+      "source_id": "d6.honest_states.list-empty-state-present.004"
+    },
+    {
+      "check_id": "d6.honest_states",
+      "dimension": "trust_transparency",
+      "fingerprint": "e69e85d9294c",
+      "fix_hint": "Check by hand that the wording says what is true and shows no invented data.",
+      "id": "d6.honest_states.e69e85d9294c",
+      "location": {
+        "file": "resources/views/operator/entitlements.blade.php",
+        "line": 1
+      },
+      "message": "List screen: wording or a branch for an empty list is present. Whether it is true is not assessed.",
+      "origin": "check:d6.honest_states",
+      "severity": "info",
+      "source_id": "d6.honest_states.list-empty-state-present.003"
+    },
+    {
+      "check_id": "d6.honest_states",
+      "dimension": "trust_transparency",
+      "fingerprint": "eff4ef35a531",
+      "fix_hint": "Say plainly what an empty, failed or unavailable list means and what to do next.",
+      "id": "d6.honest_states.eff4ef35a531",
+      "location": {
+        "file": "resources/views/profile/two-factor-authentication-form.blade.php",
+        "line": 1
+      },
+      "message": "List screen: no wording or branch for an empty list was found, and no error/unavailable wording.",
+      "origin": "check:d6.honest_states",
+      "severity": "info",
+      "source_id": "d6.honest_states.list-empty-state-absent.005"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "0462a91524d9",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.0462a91524d9",
+      "location": {
+        "file": "resources/views/errors/403.blade.php",
+        "line": 4
+      },
+      "message": "3 hard-coded colour literal(s) against 3 token reference(s); first: #c9382e.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "info",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.007"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "0546dc38d11e",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.0546dc38d11e",
+      "location": {
+        "file": "resources/views/components/validation-errors.blade.php",
+        "line": 3
+      },
+      "message": "2 hard-coded colour literal(s) against 0 token reference(s); first: #b3261e.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "info",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.005"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "0aa600f33d79",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.0aa600f33d79",
+      "location": {
+        "file": "resources/views/invoices/show.blade.php",
+        "line": 4
+      },
+      "message": "4 hard-coded colour literal(s) against 0 token reference(s); first: #71717a.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "info",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.016"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "25bde29d56af",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.25bde29d56af",
+      "location": {
+        "file": "resources/views/invoices/index.blade.php",
+        "line": 3
+      },
+      "message": "1 hard-coded colour literal(s) against 0 token reference(s); first: #f4f4f5.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "info",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.014"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "2833e9c6d1a8",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.2833e9c6d1a8",
+      "location": {
+        "file": "resources/views/auth/login.blade.php",
+        "line": 6
+      },
+      "message": "1 hard-coded colour literal(s) against 6 token reference(s); first: #3f5a1f.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "info",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.003"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "470b83327d1c",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.470b83327d1c",
+      "location": {
+        "file": "resources/views/operator/dunning-cases.blade.php",
+        "line": 3
+      },
+      "message": "1 hard-coded colour literal(s) against 0 token reference(s); first: #f4f4f5.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "info",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.026"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "47869a87533a",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.47869a87533a",
+      "location": {
+        "file": "resources/views/errors/429.blade.php",
+        "line": 4
+      },
+      "message": "2 hard-coded colour literal(s) against 1 token reference(s); first: #b8860f.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "info",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.010"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "61f58594a4d8",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.61f58594a4d8",
+      "location": {
+        "file": "resources/views/errors/404.blade.php",
+        "line": 4
+      },
+      "message": "3 hard-coded colour literal(s) against 3 token reference(s); first: #f1c62e.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "info",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.008"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "6b7abff3b5c4",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.6b7abff3b5c4",
+      "location": {
+        "file": "resources/views/dashboard.blade.php",
+        "line": 5
+      },
+      "message": "4 hard-coded colour literal(s) against 0 token reference(s); first: #f4f4f5.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "info",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.006"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "7b4ceb182344",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.7b4ceb182344",
+      "location": {
+        "file": "resources/views/operator/payment-events.blade.php",
+        "line": 19
+      },
+      "message": "1 hard-coded colour literal(s) against 0 token reference(s); first: #f4f4f5.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "info",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.028"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "7c56e858e486",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.7c56e858e486",
+      "location": {
+        "file": "resources/views/errors/419.blade.php",
+        "line": 4
+      },
+      "message": "2 hard-coded colour literal(s) against 2 token reference(s); first: #b8860f.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "info",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.009"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "7c79d3d10156",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.7c79d3d10156",
+      "location": {
+        "file": "resources/views/livewire/billing/dunning-queue.blade.php",
+        "line": 14
+      },
+      "message": "2 hard-coded colour literal(s) against 0 token reference(s); first: #f4f4f5.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "info",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.020"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "80bfb095ff63",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.80bfb095ff63",
+      "location": {
+        "file": "resources/views/operator/plans.blade.php",
+        "line": 3
+      },
+      "message": "1 hard-coded colour literal(s) against 0 token reference(s); first: #f4f4f5.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "info",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.029"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "88532cfbd5d7",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.88532cfbd5d7",
+      "location": {
+        "file": "resources/views/auth/verify-email.blade.php",
+        "line": 8
+      },
+      "message": "1 hard-coded colour literal(s) against 11 token reference(s); first: #3f5a1f.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "info",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.004"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "8d6a1b4a3d04",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.8d6a1b4a3d04",
+      "location": {
+        "file": "resources/views/operator/entitlements.blade.php",
+        "line": 3
+      },
+      "message": "3 hard-coded colour literal(s) against 0 token reference(s); first: #f4f4f5.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "info",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.027"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "9a0e08648102",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.9a0e08648102",
+      "location": {
+        "file": "resources/views/errors/503.blade.php",
+        "line": 4
+      },
+      "message": "2 hard-coded colour literal(s) against 1 token reference(s); first: #b8860f.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "info",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.012"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "a1f189437ef4",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.a1f189437ef4",
+      "location": {
+        "file": "resources/views/errors/500.blade.php",
+        "line": 4
+      },
+      "message": "3 hard-coded colour literal(s) against 2 token reference(s); first: #c9382e.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "info",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.011"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "ac2c94804e5f",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.ac2c94804e5f",
+      "location": {
+        "file": "resources/views/livewire/billing/invoice-table.blade.php",
+        "line": 25
+      },
+      "message": "3 hard-coded colour literal(s) against 0 token reference(s); first: #818cf8.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "info",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.021"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "da33ddfe6852",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.da33ddfe6852",
+      "location": {
+        "file": "resources/views/layouts/guest.blade.php",
+        "line": 56
+      },
+      "message": "3 hard-coded colour literal(s) against 4 token reference(s); first: rgba(250,246,236,0.94).",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "info",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.018"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "de114503d070",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.de114503d070",
+      "location": {
+        "file": "resources/views/livewire/billing/plan-manager.blade.php",
+        "line": 18
+      },
+      "message": "1 hard-coded colour literal(s) against 0 token reference(s); first: #f4f4f5.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "info",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.023"
+    },
+    {
+      "check_id": "d9.token_usage_vs_profile",
+      "dimension": "cross_platform_consistency",
+      "fingerprint": "e168c1959daa",
+      "fix_hint": "Declare the colour as a design token (a custom property) and reference it with var(--name).",
+      "id": "d9.token_usage_vs_profile.e168c1959daa",
+      "location": {
+        "file": "resources/views/auth/forgot-password.blade.php",
+        "line": 8
+      },
+      "message": "1 hard-coded colour literal(s) against 1 token reference(s); first: #3f5a1f.",
+      "origin": "check:d9.token_usage_vs_profile",
+      "severity": "info",
+      "source_id": "d9.token_usage_vs_profile.hardcoded-colours.002"
+    }
+  ],
+  "input": {
+    "commit": "95c163cf4799990a1259c4eeae612a8d35721615",
+    "commit_source": "git",
+    "repo": "sakhilebhayi/Dot.Billing"
+  },
+  "integrity": {
+    "sha256": "8c9f637a18313278100433ff528e23f3c03c9b3d945b045572ad815f675cb037"
+  },
+  "not_measured": [
+    {
+      "check_id": "d1.product_md_consistency",
+      "dimension": "emotional_clarity_positioning",
+      "reason": "no_check_registered"
+    },
+    {
+      "check_id": "d1.purpose_statement_present",
+      "dimension": "emotional_clarity_positioning",
+      "reason": "no_check_registered"
+    },
+    {
+      "check_id": "d10.error_copy_lint",
+      "dimension": "reliability_error_recovery",
+      "reason": "no_check_registered"
+    },
+    {
+      "adapters": [
+        "tests"
+      ],
+      "check_id": "d10.error_path_tests",
+      "dimension": "reliability_error_recovery",
+      "reason": "no_report_supplied"
+    },
+    {
+      "adapters": [
+        "detector"
+      ],
+      "check_id": "d2.impeccable_detect_findings",
+      "dimension": "brand_distinctiveness",
+      "reason": "no_report_supplied"
+    },
+    {
+      "check_id": "d2.token_uniqueness",
+      "dimension": "brand_distinctiveness",
+      "reason": "no_check_registered"
+    },
+    {
+      "check_id": "d3.primary_action_per_screen",
+      "dimension": "usability_cognitive_load",
+      "reason": "no_check_registered"
+    },
+    {
+      "check_id": "d3.task_flow_step_counts",
+      "dimension": "usability_cognitive_load",
+      "reason": "no_check_registered"
+    },
+    {
+      "adapters": [
+        "detector"
+      ],
+      "check_id": "d4.detector_clean",
+      "dimension": "visual_interaction_craftsmanship",
+      "reason": "no_report_supplied"
+    },
+    {
+      "check_id": "d4.responsive_overflow",
+      "dimension": "visual_interaction_craftsmanship",
+      "reason": "no_check_registered"
+    },
+    {
+      "check_id": "d4.spacing_type_scale_conformance",
+      "dimension": "visual_interaction_craftsmanship",
+      "reason": "check_not_measured"
+    },
+    {
+      "adapters": [
+        "tests"
+      ],
+      "check_id": "d5.test_pass_counts",
+      "dimension": "functional_completeness",
+      "reason": "no_report_supplied"
+    },
+    {
+      "check_id": "d6.consent_handling",
+      "dimension": "trust_transparency",
+      "reason": "no_check_registered"
+    },
+    {
+      "check_id": "d6.honest_states",
+      "dimension": "trust_transparency",
+      "reason": "check_not_measured"
+    },
+    {
+      "check_id": "d7.empty_state_guidance",
+      "dimension": "perceived_demonstrated_value",
+      "reason": "no_check_registered"
+    },
+    {
+      "check_id": "d7.time_to_first_result",
+      "dimension": "perceived_demonstrated_value",
+      "reason": "no_check_registered"
+    },
+    {
+      "check_id": "d7.value_above_fold",
+      "dimension": "perceived_demonstrated_value",
+      "reason": "no_check_registered"
+    },
+    {
+      "adapters": [
+        "axe",
+        "lighthouse"
+      ],
+      "check_id": "d8.axe_violations",
+      "dimension": "accessibility_inclusion",
+      "reason": "no_report_supplied"
+    },
+    {
+      "check_id": "d9.principle_diff",
+      "dimension": "cross_platform_consistency",
+      "reason": "no_check_registered"
+    },
+    {
+      "check_id": "d9.shared_components",
+      "dimension": "cross_platform_consistency",
+      "reason": "no_check_registered"
+    }
+  ],
+  "profile": {
+    "chain": [
+      "dot-ecosystem@0.1.0"
+    ],
+    "domain_overrides": [
+      {
+        "principle": "BXP-01",
+        "reason": "A calm or reassuring tone must never soften a safety, regulatory or loss-of-money alert. The alert wins.",
+        "yields_to": "domain_safety"
+      },
+      {
+        "principle": "BXP-03",
+        "reason": "Distinctive colour, type and motion yield to contrast, visible focus and reduced motion.",
+        "yields_to": "accessibility"
+      },
+      {
+        "principle": "BXP-05",
+        "reason": "Demonstrated value never overrides correctness: a polished wrong figure is worse than no figure.",
+        "yields_to": "functional_correctness"
+      },
+      {
+        "principle": "BXP-08",
+        "reason": "A faster first result must not skip identity verification, consent or security steps.",
+        "yields_to": "security"
+      }
+    ],
+    "effective_status": "draft",
+    "id": "dot-ecosystem",
+    "kind": "ecosystem",
+    "principle_refs": [
+      {
+        "non_negotiable": false,
+        "principle": "BXP-01",
+        "via": "experience_standard"
+      },
+      {
+        "non_negotiable": false,
+        "principle": "BXP-02",
+        "via": "experience_standard"
+      },
+      {
+        "non_negotiable": true,
+        "principle": "BXP-03",
+        "via": "behavioural_principle:own-functional-identity"
+      },
+      {
+        "non_negotiable": false,
+        "principle": "BXP-03",
+        "via": "experience_standard"
+      },
+      {
+        "non_negotiable": true,
+        "principle": "BXP-04",
+        "via": "behavioural_principle:error-recovery"
+      },
+      {
+        "non_negotiable": true,
+        "principle": "BXP-04",
+        "via": "behavioural_principle:honest-states"
+      },
+      {
+        "non_negotiable": true,
+        "principle": "BXP-04",
+        "via": "experience_standard"
+      },
+      {
+        "non_negotiable": false,
+        "principle": "BXP-05",
+        "via": "experience_standard"
+      },
+      {
+        "non_negotiable": false,
+        "principle": "BXP-06",
+        "via": "experience_standard"
+      },
+      {
+        "non_negotiable": false,
+        "principle": "BXP-07",
+        "via": "experience_standard"
+      },
+      {
+        "non_negotiable": false,
+        "principle": "BXP-08",
+        "via": "experience_standard"
+      },
+      {
+        "non_negotiable": true,
+        "principle": "BXP-09",
+        "via": "behavioural_principle:no-dark-patterns"
+      },
+      {
+        "non_negotiable": true,
+        "principle": "BXP-09",
+        "via": "experience_standard"
+      },
+      {
+        "non_negotiable": true,
+        "principle": "BXP-10",
+        "via": "experience_standard"
+      },
+      {
+        "non_negotiable": true,
+        "principle": "BXP-11",
+        "via": "behavioural_principle:accessibility-baseline"
+      },
+      {
+        "non_negotiable": true,
+        "principle": "BXP-11",
+        "via": "experience_standard"
+      },
+      {
+        "non_negotiable": true,
+        "principle": "BXP-12",
+        "via": "behavioural_principle:consistent-naming"
+      },
+      {
+        "non_negotiable": true,
+        "principle": "BXP-12",
+        "via": "behavioural_principle:token-interoperability"
+      },
+      {
+        "non_negotiable": true,
+        "principle": "BXP-12",
+        "via": "experience_standard"
+      }
+    ],
+    "sha256": "e21c37306843707affd13abbb1eca37c8b4102aafa79336411163dd88ca0dde0",
+    "source": "registry",
+    "version": "0.1.0"
+  },
+  "reports": {
+    "ingested": [],
+    "notes": [],
+    "skipped": [],
+    "superseded": []
+  },
+  "rubric": {
+    "id": "bxqs",
+    "sha256": "f5a4f8cb49b821bb41cb2ea3a5355089f87e60e6233cc6439a0f7ea680342bbd",
+    "version": "1.0.0"
+  },
+  "themes": [
+    "light",
+    "dark"
+  ]
+}
