@@ -25,7 +25,7 @@
         @else
             <div>
                 @foreach($this->notifications as $notification)
-                <div wire:click="markAsRead('{{ $notification->id }}')" style="padding:0.7rem 1rem;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer;{{ $notification->read_at ? 'opacity:0.55;' : '' }}">
+                <div role="button" tabindex="0" class="notif-row" wire:click="markAsRead('{{ $notification->id }}')" wire:keydown.enter="markAsRead('{{ $notification->id }}')" wire:keydown.space.prevent="markAsRead('{{ $notification->id }}')" style="padding:0.7rem 1rem;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer;{{ $notification->read_at ? 'opacity:0.55;' : '' }}">
                     <div style="display:flex;align-items:center;gap:6px;">
                         @if(!$notification->read_at)
                             <span style="width:6px;height:6px;border-radius:50%;background:#818cf8;flex-shrink:0;"></span>
