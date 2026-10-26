@@ -99,7 +99,7 @@
                                 <div class="flex items-center">
                                     @if (Gate::check('removeTeamMember', $team))
                                         <!-- Cancel Team Invitation -->
-                                        <button class="cursor-pointer ms-6 text-sm text-red-500 focus:outline-none"
+                                        <button class="cursor-pointer ms-6 text-sm text-red-500 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
                                                             wire:click="cancelTeamInvitation({{ $invitation->id }})">
                                             {{ __('Cancel') }}
                                         </button>
