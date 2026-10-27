@@ -4,6 +4,9 @@ namespace App\Providers;
 
 use App\Models\Team;
 use App\Models\User;
+use Illuminate\Foundation\Events\DiagnosingHealth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -22,6 +25,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // /up answered 200 whenever PHP booted, even with the database down. The framework dispatches DiagnosingHealth
+        // before it renders the page: a failing query turns the answer into a 500 (the exception text is never shown).
+        Event::listen(DiagnosingHealth::class, fn () => DB::select('select 1'));
+
         // Who may change a team's billing: subscribe, change plan, cancel, resume, record a payment,
         // finalize or void an invoice. The team owner and Jetstream admins only. A platform operator
         // reviews dunning cases through their own policy and is deliberately not a team manager.
