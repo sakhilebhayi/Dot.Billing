@@ -42,8 +42,12 @@ Rounding examples at 10%: R10.05 gives a R1.01 fee (100.5 rounds up); R10.04 giv
    transaction with Paystack** (status success; reference, amount and currency equal what the ticket asked for) and
    only then marks the ticket `paid`. A replay does nothing.
 5. Dot.Billing queues a signed `ticket.paid` callback to InfoDot, retried with backoff until InfoDot answers 2xx.
-6. A refund is requested with `POST /api/seminar-tickets/{ticket_ref}/refund`. The ticket becomes `refunded` only
-   when Paystack's `refund.processed` webhook arrives, then a signed `ticket.refunded` callback is queued.
+6. A refund (whole or partial) is requested with `POST /api/seminar-tickets/{ticket_ref}/refund`. It is applied only
+   when Paystack's `refund.processed` webhook arrives (`partially_refunded`, or `refunded` once the total equals the
+   ticket amount), then a signed `ticket.refunded` callback is queued.
+7. If the attendee disputes the charge with their bank, Paystack's `charge.dispute.create` / `charge.dispute.resolve`
+   are recorded against the ticket and InfoDot is told (`ticket.disputed`, `ticket.dispute_resolved`). Billing only
+   records disputes; it never submits evidence or resolves one. A person does that in the Paystack dashboard.
 
 The attendee's browser being sent back to InfoDot (`return_url`) is **UI only**. Nothing is marked paid because the
 attendee came back; a ticket becomes paid solely through the verified webhook path. InfoDot can always reconcile
@@ -104,14 +108,44 @@ Body: `ticket_ref` (string, up to 64, InfoDot's idempotency key), `payout_accoun
   repeated.
 
 ### `GET /api/seminar-tickets/{ticket_ref}`
-`{ticket_ref, status, amount_cents, platform_fee_cents, currency, paid_at, refunded_at}`, for reconciliation.
-`status` is `pending`, `paid`, `refunded` or `failed`. `404 not_found` for an unknown ticket.
+`{ticket_ref, status, amount_cents, platform_fee_cents, currency, refunded_cents, dispute_status, paid_at, refunded_at}`,
+for reconciliation. `amount_cents` is always the original ticket amount.
+
+| `status` | Meaning |
+|---|---|
+| `pending` | created, not paid |
+| `paid` | paid, nothing refunded, no open dispute |
+| `partially_refunded` | `0 < refunded_cents < amount_cents` |
+| `refunded` | `refunded_cents == amount_cents` |
+| `failed` | cancelled while unpaid |
+| `disputed` | a Paystack dispute is open (or resolved with an outcome nobody could classify): the host cannot refund |
+| `chargeback` | a dispute was lost |
+
+`dispute_status` is `open` or `resolved` for the latest dispute on the ticket, `null` if it never had one.
+`refunded_at` is the time of the most recent processed refund. `404 not_found` for an unknown ticket.
 
 ### `POST /api/seminar-tickets/{ticket_ref}/refund`
-Only for a `paid` ticket. Asks Paystack to refund the whole transaction. Returns the status payload plus
-`refund_requested: true`. The ticket stays `paid` until `refund.processed` arrives. Asking again changes nothing and
-makes no second Paystack call. A `pending` or `failed` ticket is `409 ticket_not_refundable`; Paystack refusing is
-`422 refund_rejected`; an already `refunded` ticket answers `200`.
+For a `paid` or `partially_refunded` ticket. Optional JSON body `{amount_cents: int > 0, refund_key: string up to 64}`.
+
+- **No amount**: refund the whole remaining amount. The refund key is then `full` (or the `refund_key` you send).
+- **With `amount_cents`**: `refund_key` is **required** and is the idempotency key. The same key and amount again returns the same
+  refund and makes **no second Paystack call**; the same key with a different amount is `409 refund_key_conflict`. A refund that
+  Paystack reported as failed may be asked for again under its key.
+- An amount above what is still refundable is `422 refund_exceeds_remaining`. "Still refundable" is the ticket amount minus
+  `refunded_cents` minus refunds still waiting for Paystack's confirmation, so two in-flight requests cannot together over-refund.
+- Billing passes the amount (and currency) to Paystack's refund API; when the whole untouched ticket is refunded it sends no amount.
+- Nothing is refunded by this call. `refunded_cents` and the status move only when Paystack's `refund.processed` arrives. The answer is
+  the status payload plus `refund_requested` (a refund is waiting for Paystack) and `refund` `{refund_key, amount_cents, status}`
+  with status `pending`, `processed` or `failed`.
+- A **disputed** ticket is `409 ticket_disputed`; a `chargeback`, `pending` or `failed` ticket is `409 ticket_not_refundable`.
+  Paystack refusing is `422 refund_rejected`. A fully refunded ticket asked for "everything" with no key answers `200` unchanged.
+- Data: `ticket_payments.refunded_cents` and a `ticket_refunds` row per refund (`ticket_payment_id`, `refund_key` unique per ticket,
+  `amount_cents`, `status`, `paystack_refund_id`, `processed_at`).
+
+**Not verified: how Paystack apportions a refund between the host's subaccount and the platform on a split transaction.** Whether the
+host alone bears a partial refund, whether InfoDot's flat fee is returned pro rata, and which balance is debited, has not been checked
+against Paystack and this code does not try to decide it. **Do one small live test (a small ticket, a small partial refund) and look at
+both balances before this is used with real money.**
 
 ### `POST /api/seminar-tickets/{ticket_ref}/cancel`
 Only for a `pending` (unpaid) ticket. Marks it `failed` (reason `cancelled`) so it can never be paid later.
@@ -126,8 +160,14 @@ marketplace is on and the reference belongs to a ticket:
   ticket is left alone. A `charge.success` for a **cancelled** ticket is held as `needs_review` / `ticket_cancelled`,
   logged as a warning and audited, not applied: the attendee has been charged and an operator must refund them.
   If Paystack cannot be reached to verify, the webhook answers `503` so Paystack delivers it again.
-- `refund.processed`: a full refund of a paid ticket marks it `refunded`. A refund for any other amount, an unpaid
-  ticket, or with a status other than `processed` is held for an operator (partial refunds are not handled).
+- `refund.processed`: matched to our `ticket_refunds` row by Paystack's refund id (or, failing that, the one pending refund of that
+  amount). A refund started in the Paystack dashboard has no row and gets one (key `paystack-<id>`). It is applied if its own status is
+  `processed`, its currency is the ticket's and it does not exceed what is still refundable; otherwise it is held for an operator
+  (`refund_amount_mismatch`, `refund_exceeds_remaining`, `refund_currency_mismatch`, `refund_not_processed`, `refund_for_unpaid_ticket`,
+  `refund_ambiguous`). A replay is a no-op.
+- `refund.failed`: marks the matching pending refund `failed`, which frees that amount and lets the same `refund_key` be asked for again.
+  Anything it cannot match is ignored. InfoDot is not called back for a failed refund.
+- `charge.dispute.create` / `charge.dispute.resolve` (below).
 - A reference that belongs to no ticket and no invoice is held as `unknown_reference`, as before.
 
 ## Callbacks to InfoDot
@@ -138,16 +178,46 @@ marketplace is on and the reference belongs to a ticket:
 The signature is made at send time, so a late retry carries a fresh timestamp.
 
 ```
-ticket.paid      {event, ticket_ref, reference, amount_cents, platform_fee_cents, currency, paid_at}
-ticket.refunded  {event, ticket_ref, reference, amount_cents, currency, refunded_at}
+ticket.paid             {event, ticket_ref, reference, amount_cents, platform_fee_cents, currency, paid_at}
+ticket.refunded         {event, ticket_ref, reference, amount_cents, currency, refunded_at,
+                         refund_amount_cents, refunded_total_cents, refund_key}
+ticket.disputed         {event, ticket_ref, reference, amount_cents, currency, opened_at}
+ticket.dispute_resolved {event, ticket_ref, reference, amount_cents, currency, outcome, resolved_at}
 ```
+
+`amount_cents` is always the ORIGINAL ticket amount. `ticket.refunded` is sent once per processed refund (a ticket can have several
+partial refunds); `outcome` is `won`, `lost` or `other`.
 
 Delivery is a queued job (`SendMarketplaceCallback`, needs `php artisan queue:work`). A 2xx is success. 5xx, 429,
 408, 425, an unreachable receiver and also 401/403/404 (a receiver that is mis-set and may be fixed) are retried with
 backoff of 1 min, 5 min, 15 min, 1 h, 2 h, 4 h, 12 h (8 tries), then the job lands in `failed_jobs` and an error is
-logged. Other 4xx are not retried. **InfoDot must treat `(event, ticket_ref)` as idempotent**: a retry after a lost
-response sends the same event again. If the callback URL or secret is missing the callback is not queued and an error
+logged. Other 4xx are not retried. **InfoDot must treat events as idempotent**: a retry after a lost
+response sends the same event again. De-duplicate on `(event, ticket_ref)`, and for `ticket.refunded` on `(event, ticket_ref, refund_key)`
+because one ticket can have several refunds (`ticket.disputed` and `ticket.dispute_resolved` can repeat if a ticket is disputed twice, so
+add `opened_at` / `resolved_at`). The `Idempotency-Key` header carries exactly that: `{event}:{ticket_ref}` plus the `refund_key`,
+`opened_at` or `resolved_at` where there is one. If the callback URL or secret is missing the callback is not queued and an error
 is logged; the ticket is still recorded as paid and `GET /api/seminar-tickets/{ticket_ref}` stays the source of truth.
+
+## Disputes and chargebacks
+
+Paystack's `charge.dispute.create` and `charge.dispute.resolve` are recorded when the transaction reference belongs to a ticket (marketplace
+on). For every other reference they are ignored, exactly as before. **Billing records only. It never submits evidence, accepts or
+declines a dispute through the API; a person does that in the Paystack dashboard.**
+
+- `charge.dispute.create`: a `ticket_disputes` row (`ticket_payment_id`, `paystack_dispute_id` unique, `status` `open`, `opened_at`). A
+  `paid` or `partially_refunded` ticket becomes `disputed` (a refund request is then `409 ticket_disputed`). An audit entry is written and
+  `ticket.disputed` is queued. A dispute on a ticket that was never paid is held for an operator. A replay is a no-op.
+- `charge.dispute.resolve`: the dispute becomes `resolved` with `resolution` `won`, `lost` or `other` (Paystack's raw text is kept in
+  `paystack_resolution`) and `ticket.dispute_resolved` is queued.
+  - **won** returns a `disputed` ticket to its resting status (`paid`, `partially_refunded` or `refunded`, from `refunded_cents`).
+  - **lost** sets `chargeback`.
+  - **other** (anything not recognised) keeps the ticket `disputed`, so it still cannot be refunded, and is held for an operator
+    (`dispute_outcome_unknown`). This is a deliberate departure from "resolved means unblocked", to avoid guessing on money.
+- The mapping `declined` -> won and `merchant-accepted` -> lost comes from Paystack's documentation and has **not been checked against a
+  real dispute**. A refund that was already in flight when a dispute opened is still counted when it arrives, without changing the status.
+- A resolve for a dispute we never saw opened is recorded as already resolved. A dispute on an already refunded ticket is recorded and
+  reported but leaves the status `refunded` until it is resolved.
+- Evidence deadlines, the money Paystack debits for a lost dispute and any dispute fee are not tracked.
 
 ## Configuration
 
@@ -171,16 +241,18 @@ tickets already created (their fee is stored), and existing subaccounts keep the
 ## Audit trail
 
 `payout_account.created`, `payout_account.updated`, `ticket.created`, `ticket.paid`, `ticket.refund_requested`,
-`ticket.refunded`, `ticket.cancelled` and `ticket.held` are written to `billing_audit_events` with no team (the
+`ticket.refunded` (one per processed refund), `ticket.refund_failed`, `ticket.cancelled`, `ticket.disputed`, `ticket.dispute_resolved` and `ticket.held` are written to `billing_audit_events` with no team (the
 `team_id` column became nullable for this). Metadata never contains an account number, a subaccount code or a key.
 
 ## What is NOT handled
 
 - **VAT / tax invoicing** for InfoDot's platform fee or for the host's ticket sale. No invoice or receipt is issued.
 - **Host KYC** beyond whatever Paystack itself checks when it creates the subaccount.
-- **Chargebacks and disputes.** A dispute event from Paystack is not read; an operator has to deal with it in Paystack.
+- **Answering disputes.** Disputes are recorded and reported (above) but evidence, deadlines and dispute fees are handled by a person in
+  the Paystack dashboard; Billing does nothing to a dispute.
 - **Payout timing.** Paystack controls when the host and InfoDot are settled; Billing does not track settlements.
-- **Partial refunds.** Refund always asks for the full amount; a partial refund made in Paystack is held for an operator.
+- How Paystack splits a refund between the host and InfoDot (see the refund section: not verified).
+- Whether the refunded amount in a `refund.processed` webhook is in cents: assumed, and a wrong guess shows up as refunds held for an operator.
 - Disabling or re-enabling a payout account through the API, expiring an unpaid ticket automatically (a host cancels
   it), and a command to re-send callbacks that failed for good.
 

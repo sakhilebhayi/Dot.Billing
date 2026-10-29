@@ -418,7 +418,7 @@ class SeminarTicketCreateTest extends TestCase
 
         $this->signed('GET', '/api/seminar-tickets/tkt-0001')->assertOk()->assertExactJson([
             'ticket_ref' => 'tkt-0001', 'status' => 'pending', 'amount_cents' => 20000, 'platform_fee_cents' => 2000,
-            'currency' => 'ZAR', 'paid_at' => null, 'refunded_at' => null,
+            'currency' => 'ZAR', 'refunded_cents' => 0, 'dispute_status' => null, 'paid_at' => null, 'refunded_at' => null,
         ]);
 
         TicketPayment::sole()->forceFill(['status' => 'paid', 'paid_at' => '2026-11-05 09:01:00'])->save();

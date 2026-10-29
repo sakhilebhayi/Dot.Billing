@@ -77,6 +77,31 @@ class TicketCallbackTest extends TestCase
         });
     }
 
+    public function test_the_idempotency_key_tells_apart_events_that_can_repeat_for_one_ticket(): void
+    {
+        $this->fakeHttp(['infodot.example/*' => Http::response('', 200)]);
+        $client = app(MarketplaceCallbackClient::class);
+        $base = ['ticket_ref' => 'tkt-cb-1', 'reference' => 'dbt-cb-1', 'amount_cents' => 20000, 'currency' => 'ZAR'];
+
+        $client->deliver($base + ['event' => 'ticket.refunded', 'refund_key' => 'r-1', 'refund_amount_cents' => 5000]);
+        $client->deliver($base + ['event' => 'ticket.refunded', 'refund_key' => 'r-2', 'refund_amount_cents' => 5000]);
+        $client->deliver($base + ['event' => 'ticket.disputed', 'opened_at' => '2026-11-06T08:00:00+00:00']);
+        $client->deliver($base + ['event' => 'ticket.dispute_resolved', 'outcome' => 'won', 'resolved_at' => '2026-11-20T10:00:00+00:00']);
+        $client->deliver($this->paidPayload());
+
+        $keys = [];
+        Http::assertSent(function (Request $r) use (&$keys) {
+            $keys[] = $r->header('Idempotency-Key')[0];
+
+            return true;
+        });
+        $this->assertSame([
+            'ticket.refunded:tkt-cb-1:r-1', 'ticket.refunded:tkt-cb-1:r-2',
+            'ticket.disputed:tkt-cb-1:2026-11-06T08:00:00+00:00', 'ticket.dispute_resolved:tkt-cb-1:2026-11-20T10:00:00+00:00',
+            'ticket.paid:tkt-cb-1',
+        ], $keys);
+    }
+
     public function test_a_retry_hours_later_carries_a_fresh_timestamp_and_signature(): void
     {
         $this->fakeHttp(['infodot.example/*' => Http::response('', 200)]);

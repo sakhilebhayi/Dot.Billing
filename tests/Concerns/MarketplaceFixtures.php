@@ -197,6 +197,24 @@ trait MarketplaceFixtures
         ], $data)];
     }
 
+    /**
+     * A charge.dispute.create / charge.dispute.resolve webhook body for a transaction reference.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function disputeEvent(string $event, string $reference, array $data = []): array
+    {
+        return ['event' => $event, 'data' => array_merge([
+            'id' => 358950,
+            'status' => $event === 'charge.dispute.resolve' ? 'resolved' : 'awaiting-merchant-feedback',
+            'resolution' => null,
+            'created_at' => '2026-11-06T08:00:00.000Z',
+            'resolved_at' => $event === 'charge.dispute.resolve' ? '2026-11-20T10:00:00.000Z' : null,
+            'transaction' => ['id' => 5550001, 'reference' => $reference, 'amount' => 20000, 'currency' => 'ZAR'],
+        ], $data)];
+    }
+
     /** Every row of every table as one string, to prove a value is stored nowhere. */
     protected function databaseDump(): string
     {

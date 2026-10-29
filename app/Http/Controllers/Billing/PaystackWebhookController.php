@@ -25,8 +25,10 @@ use JsonException;
  *  - charge.success: matched to our attempt by reference and settled (PaystackSettlement);
  *  - refund.processed: recorded for an operator, never applied;
  *  - a reference that belongs to a seminar ticket (marketplace on) goes to TicketSettlement instead: the
- *    charge is verified with Paystack before the ticket is marked paid, and a full refund marks it refunded.
- *    If Paystack cannot be reached to verify, the answer is 503 so Paystack redelivers;
+ *    charge is verified with Paystack before the ticket is marked paid, a processed refund (whole or partial) is
+ *    applied, and charge.dispute.create / charge.dispute.resolve are recorded. Dispute events (and refund.failed)
+ *    for any other reference are ignored, exactly as before. If Paystack cannot be reached to verify a charge,
+ *    the answer is 503 so Paystack redelivers;
  *  - any other event: acknowledged and ignored;
  *  - every business condition (unknown reference, mismatch, overpayment, replay) is a 200, so Paystack does
  *    not retry forever. The condition is recorded as a held payment event for operators instead.
@@ -54,6 +56,8 @@ class PaystackWebhookController extends Controller
         $result = match ($payload['event']) {
             'charge.success' => $this->chargeSuccess($payload['data'], $raw, $settlement, $tickets),
             'refund.processed' => $this->refundProcessed($payload['data'], $raw, $settlement, $tickets),
+            'refund.failed' => $this->refundFailed($payload['data'], $tickets),
+            'charge.dispute.create', 'charge.dispute.resolve' => $this->dispute($payload['event'], $payload['data'], $raw, $settlement, $tickets),
             default => 'ignored',
         };
 
@@ -145,7 +149,7 @@ class PaystackWebhookController extends Controller
             ->where('provider', PaystackSettlement::PROVIDER)->where('reference', $reference)->first();
 
         if (! $attempt && $reference !== null && ($ticket = $tickets->findByReference($reference))) {
-            return $tickets->settleRefund($ticket, $key, $cents, $currency, is_string($data['status'] ?? null) ? $data['status'] : null, $payload);
+            return $tickets->settleRefund($ticket, $this->refundIds($data), $key, $cents, $currency, is_string($data['status'] ?? null) ? $data['status'] : null, $payload);
         }
 
         if (! $attempt) {
@@ -157,6 +161,83 @@ class PaystackWebhookController extends Controller
         $settlement->holdRefund($attempt, $key, $cents, $currency, $payload);
 
         return 'held';
+    }
+
+    /**
+     * Paystack's refund.failed: only meaningful for a refund we asked for on a ticket; anything else is ignored.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function refundFailed(array $data, TicketSettlement $tickets): string
+    {
+        $reference = $this->transactionReference($data);
+        $ticket = $reference === null ? null : $tickets->findByReference($reference);
+
+        return $ticket ? $tickets->settleRefundFailed($ticket, $this->refundIds($data), $this->wholeCents($data['amount'] ?? null)) : 'ignored';
+    }
+
+    /**
+     * charge.dispute.create / charge.dispute.resolve. Recorded for a seminar ticket only (marketplace on and the
+     * transaction reference is a ticket's); for every other reference the event is ignored, as it always was.
+     * Billing never answers or resolves a dispute: a person does that in the Paystack dashboard.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function dispute(string $event, array $data, string $raw, PaystackSettlement $settlement, TicketSettlement $tickets): string
+    {
+        $reference = $this->transactionReference($data);
+        $ticket = $reference === null ? null : $tickets->findByReference($reference);
+
+        if (! $ticket) {
+            return 'ignored';
+        }
+
+        $id = $data['id'] ?? null;
+
+        if (! is_scalar($id) || (string) $id === '') {
+            $settlement->holdUnknown('ticket_dispute', 'body:'.sha1($raw), 'unreadable_payload', 0, 'XXX', ['event' => $event, 'reference' => $reference], PaymentEvent::NEEDS_REVIEW);
+
+            return 'held';
+        }
+
+        return $event === 'charge.dispute.create'
+            ? $tickets->settleDisputeCreated($ticket, (string) $id, $data)
+            : $tickets->settleDisputeResolved($ticket, (string) $id, $data);
+    }
+
+    /**
+     * The reference of the transaction an event is about: refund events carry it at the top, dispute events
+     * inside `transaction`.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function transactionReference(array $data): ?string
+    {
+        $transaction = $data['transaction'] ?? null;
+        $reference = $data['transaction_reference']
+            ?? (is_array($transaction) ? ($transaction['reference'] ?? null) : null)
+            ?? (is_string($transaction) ? $transaction : null);
+
+        return is_string($reference) && $reference !== '' ? $reference : null;
+    }
+
+    /**
+     * Paystack's identifiers for a refund (its id and its refund reference).
+     *
+     * @param  array<string, mixed>  $data
+     * @return list<string>
+     */
+    private function refundIds(array $data): array
+    {
+        $ids = [];
+
+        foreach (['id', 'refund_reference'] as $field) {
+            if (is_scalar($data[$field] ?? null) && (string) $data[$field] !== '') {
+                $ids[] = (string) $data[$field];
+            }
+        }
+
+        return $ids;
     }
 
     /**

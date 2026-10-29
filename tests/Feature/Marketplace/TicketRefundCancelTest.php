@@ -86,6 +86,7 @@ class TicketRefundCancelTest extends TestCase
         Queue::assertPushed(SendMarketplaceCallback::class, fn ($job) => $job->payload === [
             'event' => 'ticket.refunded', 'ticket_ref' => $ticket->ticket_ref, 'reference' => $ticket->paystack_reference,
             'amount_cents' => 20000, 'currency' => 'ZAR', 'refunded_at' => '2026-11-05T09:00:00+00:00',
+            'refund_amount_cents' => 20000, 'refunded_total_cents' => 20000, 'refund_key' => 'full',
         ]);
 
         $this->signed('GET', "/api/seminar-tickets/{$ticket->ticket_ref}")->assertJsonPath('status', 'refunded')->assertJsonPath('refunded_at', '2026-11-05T09:00:00+00:00');
@@ -116,23 +117,34 @@ class TicketRefundCancelTest extends TestCase
 
     public function test_refunding_an_already_refunded_ticket_is_an_idempotent_success(): void
     {
-        $ticket = $this->makePaidTicket(['status' => 'refunded', 'refunded_at' => now()]);
+        $ticket = $this->makePaidTicket(['status' => 'refunded', 'refunded_cents' => 20000, 'refunded_at' => now()]);
 
         $this->signed('POST', "/api/seminar-tickets/{$ticket->ticket_ref}/refund")->assertOk()->assertJsonPath('status', 'refunded');
         Http::assertNothingSent();
     }
 
-    public function test_a_partial_or_mismatched_refund_is_held_and_the_ticket_is_not_marked_refunded(): void
+    public function test_a_refund_above_what_is_still_refundable_is_held_and_not_applied(): void
     {
         $ticket = $this->makePaidTicket();
 
-        $this->webhook($this->ticketRefundProcessed($ticket, ['amount' => 5000]))->assertOk()->assertJson(['status' => 'held']);
+        $this->webhook($this->ticketRefundProcessed($ticket, ['amount' => 20001]))->assertOk()->assertJson(['status' => 'held']);
 
-        $this->assertSame('paid', $ticket->fresh()->status);
+        $ticket->refresh();
+        $this->assertSame(['paid', 0], [$ticket->status, $ticket->refunded_cents]);
         $event = PaymentEvent::withoutGlobalScope('team')->sole();
-        $this->assertSame(['needs_review', 'refund_amount_mismatch', 'ticket_refund', null], [$event->status, $event->reason, $event->type, $event->team_id]);
+        $this->assertSame(['needs_review', 'refund_exceeds_remaining', 'ticket_refund', null], [$event->status, $event->reason, $event->type, $event->team_id]);
         $this->assertSame(['ticket.held'], $this->audits());
         Queue::assertNothingPushed();
+    }
+
+    public function test_a_refund_in_another_currency_is_held(): void
+    {
+        $ticket = $this->makePaidTicket();
+
+        $this->webhook($this->ticketRefundProcessed($ticket, ['currency' => 'NGN']))->assertOk()->assertJson(['status' => 'held']);
+
+        $this->assertSame('paid', $ticket->fresh()->status);
+        $this->assertSame('refund_currency_mismatch', PaymentEvent::withoutGlobalScope('team')->sole()->reason);
     }
 
     public function test_a_refund_whose_own_status_is_not_processed_is_held(): void
@@ -241,7 +253,7 @@ class TicketRefundCancelTest extends TestCase
     public function test_a_paid_or_refunded_ticket_cannot_be_cancelled(): void
     {
         $paid = $this->makePaidTicket();
-        $refunded = $this->makePaidTicket(['status' => 'refunded', 'refunded_at' => now()]);
+        $refunded = $this->makePaidTicket(['status' => 'refunded', 'refunded_cents' => 20000, 'refunded_at' => now()]);
 
         $this->signed('POST', "/api/seminar-tickets/{$paid->ticket_ref}/cancel")->assertStatus(409)->assertJsonPath('error', 'ticket_not_cancellable');
         $this->signed('POST', "/api/seminar-tickets/{$refunded->ticket_ref}/cancel")->assertStatus(409);

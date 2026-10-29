@@ -140,21 +140,32 @@ class PaystackClient
     }
 
     /**
-     * POST /refund for the whole of a transaction (no amount is sent, so Paystack refunds it in full).
-     * Returns Paystack's refund status ("pending", "processing", ...). The ticket is NOT refunded by this
-     * call; only the refund.processed webhook says so.
+     * POST /refund. With no amount Paystack refunds the transaction in full; with an amount (and currency) it
+     * refunds that much. Returns Paystack's refund status ("pending", "processing", ...) and its refund id when
+     * it gave one. The ticket is NOT refunded by this call; only the refund.processed webhook says so.
+     *
+     * @return array{status: string, id: ?string}
      *
      * @throws PaymentGatewayException
      */
-    public function refundTransaction(string $reference): string
+    public function refundTransaction(string $reference, ?int $amountCents = null, ?string $currency = null): array
     {
-        $data = $this->send('refund', $reference, fn (PendingRequest $http) => $http->post('/refund', ['transaction' => $reference]));
+        $body = ['transaction' => $reference];
 
-        if (! is_string($data['status'] ?? null) || $data['status'] === '') {
-            return $this->invalid('refund', $reference);
+        if ($amountCents !== null) {
+            $body['amount'] = $amountCents;
+            $body['currency'] = $currency;
         }
 
-        return strtolower($data['status']);
+        $data = $this->send('refund', $reference, fn (PendingRequest $http) => $http->post('/refund', array_filter($body, fn ($v) => $v !== null)));
+
+        if (! is_string($data['status'] ?? null) || $data['status'] === '') {
+            $this->invalid('refund', $reference);
+        }
+
+        $id = $data['id'] ?? $data['refund_reference'] ?? null;
+
+        return ['status' => strtolower($data['status']), 'id' => is_scalar($id) && (string) $id !== '' ? (string) $id : null];
     }
 
     /**

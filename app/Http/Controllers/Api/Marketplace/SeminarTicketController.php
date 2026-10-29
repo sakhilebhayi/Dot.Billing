@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Marketplace;
 use App\Exceptions\Payments\MarketplaceException;
 use App\Http\Controllers\Controller;
 use App\Models\TicketPayment;
+use App\Models\TicketRefund;
 use App\Services\Marketplace\MarketplaceConfig;
 use App\Services\Marketplace\SeminarTickets;
 use Illuminate\Http\JsonResponse;
@@ -66,9 +67,16 @@ class SeminarTicketController extends Controller
         return response()->json($ticket->statusPayload());
     }
 
-    public function refund(string $ticketRef, SeminarTickets $tickets): JsonResponse
+    public function refund(Request $request, string $ticketRef, SeminarTickets $tickets): JsonResponse
     {
-        return response()->json($this->withRefundFlag($tickets->refund($ticketRef)));
+        $data = $request->validate([
+            'amount_cents' => ['nullable', 'integer:strict', 'min:1'],
+            'refund_key' => ['nullable', 'required_with:amount_cents', 'string', 'max:64', 'regex:/^[A-Za-z0-9._:-]+$/'],
+        ]);
+
+        [$ticket, $refund] = $tickets->refund($ticketRef, $data['amount_cents'] ?? null, $data['refund_key'] ?? null);
+
+        return response()->json($this->withRefundDetail($ticket, $refund));
     }
 
     public function cancel(string $ticketRef, SeminarTickets $tickets): JsonResponse
@@ -77,10 +85,16 @@ class SeminarTicketController extends Controller
     }
 
     /**
+     * The status payload plus where the refund stands. `refund_requested` is true while a refund is waiting for
+     * Paystack's confirmation.
+     *
      * @return array<string, mixed>
      */
-    private function withRefundFlag(TicketPayment $ticket): array
+    private function withRefundDetail(TicketPayment $ticket, ?TicketRefund $refund): array
     {
-        return $ticket->statusPayload() + ['refund_requested' => $ticket->refund_requested_at !== null];
+        return $ticket->statusPayload() + [
+            'refund_requested' => $ticket->refunds()->where('status', TicketRefund::PENDING)->exists(),
+            'refund' => $refund ? ['refund_key' => $refund->refund_key, 'amount_cents' => $refund->amount_cents, 'status' => $refund->status] : null,
+        ];
     }
 }
