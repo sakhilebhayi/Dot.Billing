@@ -6,6 +6,7 @@ use App\Exceptions\Payments\PaymentGatewayException;
 use App\Http\Controllers\Controller;
 use App\Models\PaymentAttempt;
 use App\Models\PaymentEvent;
+use App\Services\Marketplace\TicketSettlement;
 use App\Services\Payments\Paystack\PaystackConfig;
 use App\Services\Payments\Paystack\PaystackSettlement;
 use App\Services\Payments\Paystack\PaystackTransaction;
@@ -23,13 +24,16 @@ use JsonException;
  *  - not JSON, or no event name: 400;
  *  - charge.success: matched to our attempt by reference and settled (PaystackSettlement);
  *  - refund.processed: recorded for an operator, never applied;
+ *  - a reference that belongs to a seminar ticket (marketplace on) goes to TicketSettlement instead: the
+ *    charge is verified with Paystack before the ticket is marked paid, and a full refund marks it refunded.
+ *    If Paystack cannot be reached to verify, the answer is 503 so Paystack redelivers;
  *  - any other event: acknowledged and ignored;
  *  - every business condition (unknown reference, mismatch, overpayment, replay) is a 200, so Paystack does
  *    not retry forever. The condition is recorded as a held payment event for operators instead.
  */
 class PaystackWebhookController extends Controller
 {
-    public function __invoke(Request $request, PaystackConfig $config, PaystackSettlement $settlement): JsonResponse
+    public function __invoke(Request $request, PaystackConfig $config, PaystackSettlement $settlement, TicketSettlement $tickets): JsonResponse
     {
         $raw = $request->getContent();
 
@@ -48,10 +52,14 @@ class PaystackWebhookController extends Controller
         }
 
         $result = match ($payload['event']) {
-            'charge.success' => $this->chargeSuccess($payload['data'], $raw, $settlement),
-            'refund.processed' => $this->refundProcessed($payload['data'], $raw, $settlement),
+            'charge.success' => $this->chargeSuccess($payload['data'], $raw, $settlement, $tickets),
+            'refund.processed' => $this->refundProcessed($payload['data'], $raw, $settlement, $tickets),
             default => 'ignored',
         };
+
+        if ($result === 'retry') {
+            return response()->json(['status' => 'retry'], 503);
+        }
 
         return response()->json(['status' => $result]);
     }
@@ -74,7 +82,7 @@ class PaystackWebhookController extends Controller
     /**
      * @param  array<string, mixed>  $data
      */
-    private function chargeSuccess(array $data, string $raw, PaystackSettlement $settlement): string
+    private function chargeSuccess(array $data, string $raw, PaystackSettlement $settlement, TicketSettlement $tickets): string
     {
         try {
             $tx = PaystackTransaction::fromData($data);
@@ -88,6 +96,10 @@ class PaystackWebhookController extends Controller
 
         $attempt = PaymentAttempt::withoutGlobalScope('team')
             ->where('provider', PaystackSettlement::PROVIDER)->where('reference', $tx->reference)->first();
+
+        if (! $attempt && ($ticket = $tickets->findByReference($tx->reference))) {
+            return $tickets->settleCharge($ticket);
+        }
 
         if (! $attempt) {
             $settlement->holdUnknown('payment', $tx->id, 'unknown_reference', $tx->amountCents, $tx->currency, $tx->safePayload('charge.success'));
@@ -109,7 +121,7 @@ class PaystackWebhookController extends Controller
     /**
      * @param  array<string, mixed>  $data
      */
-    private function refundProcessed(array $data, string $raw, PaystackSettlement $settlement): string
+    private function refundProcessed(array $data, string $raw, PaystackSettlement $settlement, TicketSettlement $tickets): string
     {
         $transaction = $data['transaction'] ?? null;
         $reference = $data['transaction_reference']
@@ -131,6 +143,10 @@ class PaystackWebhookController extends Controller
 
         $attempt = $reference === null ? null : PaymentAttempt::withoutGlobalScope('team')
             ->where('provider', PaystackSettlement::PROVIDER)->where('reference', $reference)->first();
+
+        if (! $attempt && $reference !== null && ($ticket = $tickets->findByReference($reference))) {
+            return $tickets->settleRefund($ticket, $key, $cents, $currency, is_string($data['status'] ?? null) ? $data['status'] : null, $payload);
+        }
 
         if (! $attempt) {
             $settlement->holdUnknown('refund', $key, 'unknown_reference', $cents, $currency, $payload, PaymentEvent::NEEDS_REVIEW);

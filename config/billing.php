@@ -94,6 +94,31 @@ return [
         'breaker_cooldown' => 300,
     ],
 
+    /*
+    | Seminar ticket marketplace (see docs/seminar-payments.md). OFF unless BILLING_MARKETPLACE_ENABLED=true;
+    | while off every marketplace endpoint answers 404 and the Paystack webhook ignores tickets entirely.
+    | Only the platform key "infodot" may call it (its BILLING_ENTITLEMENT_SECRET_INFODOT signs the calls).
+    |
+    |  platform_percent  InfoDot's share of the ticket price, a whole number 0 to 50. The host bears Paystack's fee.
+    |  currencies        comma separated list of currencies a ticket may be priced in
+    |  min/max_amount    ticket price bounds in cents
+    |  callback_url      where signed ticket.paid / ticket.refunded events are POSTed (https only)
+    |  callback_secret   signs those events (HMAC-SHA256, same scheme as the entitlements calls)
+    |  return_hosts      comma separated hosts a ticket's return_url may point at; empty = reject any return_url
+    */
+    'marketplace' => [
+        'enabled' => (bool) env('BILLING_MARKETPLACE_ENABLED', false),
+        'platform_percent' => env('BILLING_MARKETPLACE_PLATFORM_PERCENT', 10),
+        'currencies' => array_values(array_filter(array_map(fn ($c) => strtoupper(trim($c)), explode(',', (string) env('BILLING_MARKETPLACE_CURRENCIES', 'ZAR'))))),
+        'min_amount_cents' => (int) env('BILLING_MARKETPLACE_MIN_AMOUNT_CENTS', 500),
+        'max_amount_cents' => (int) env('BILLING_MARKETPLACE_MAX_AMOUNT_CENTS', 5000000),
+        'callback_url' => env('BILLING_MARKETPLACE_CALLBACK_URL'),
+        'callback_secret' => env('BILLING_MARKETPLACE_CALLBACK_SECRET'),
+        'callback_timeout' => 5,
+        'return_hosts' => array_values(array_filter(array_map(fn ($h) => strtolower(trim($h)), explode(',', (string) env('BILLING_MARKETPLACE_RETURN_HOSTS', ''))))),
+        'banks_cache_seconds' => 6 * 3600,
+    ],
+
     // What the entitlements API reports for a company that has no live subscription.
     // These are placeholders until the owner decides the free tier: set them per environment.
     'free_tier' => [

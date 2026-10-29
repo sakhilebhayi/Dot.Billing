@@ -4,6 +4,8 @@ namespace App\Services\Payments\Paystack;
 
 use App\Exceptions\Payments\PaymentGatewayException;
 use App\Models\PaymentAttempt;
+use App\Models\TicketPayment;
+use App\Support\Redacted;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
@@ -46,16 +48,159 @@ class PaystackClient
             ], JSON_THROW_ON_ERROR),
         ]));
 
-        $url = $data['authorization_url'] ?? null;
-        $reference = $data['reference'] ?? null;
+        return $this->checkoutFrom($data, $attempt->reference);
+    }
 
-        if (! is_string($url) || ! $this->isPaystackCheckoutUrl($url) || ! is_string($data['access_code'] ?? null) || $reference !== $attempt->reference) {
-            Log::warning('paystack.invalid_response', ['endpoint' => 'initialize', 'reference' => $attempt->reference]);
+    /**
+     * POST /transaction/initialize for a seminar ticket, split to the host's subaccount. The ticket's
+     * amount, currency and reference are sent as they are stored. `bearer` = subaccount puts Paystack's fee on
+     * the host, and a FLAT `transaction_charge` makes InfoDot's share exactly the stored platform fee (a
+     * percentage would be recomputed by Paystack). The return address, when there is one, becomes the
+     * callback_url; it is only where the attendee's browser lands and never marks anything paid.
+     *
+     * @throws PaymentGatewayException
+     */
+    public function initializeTicketTransaction(TicketPayment $ticket, string $subaccountCode): PaystackInitialization
+    {
+        $body = [
+            'email' => $ticket->buyer_email,
+            'amount' => $ticket->amount_cents,
+            'currency' => $ticket->currency,
+            'reference' => $ticket->paystack_reference,
+            'subaccount' => $subaccountCode,
+            'bearer' => 'subaccount',
+            'transaction_charge' => $ticket->platform_fee_cents,
+            'metadata' => json_encode([
+                'kind' => 'seminar_ticket',
+                'ticket_ref' => $ticket->ticket_ref,
+                'description' => $ticket->description,
+            ], JSON_THROW_ON_ERROR),
+        ];
+
+        if ($ticket->return_url !== null) {
+            $body['callback_url'] = $ticket->return_url;
+        }
+
+        $data = $this->send('initialize', $ticket->paystack_reference, fn (PendingRequest $http) => $http->post('/transaction/initialize', $body));
+
+        return $this->checkoutFrom($data, $ticket->paystack_reference);
+    }
+
+    /**
+     * GET /bank for South Africa (ZAR): the banks a host can be paid into.
+     *
+     * @return list<array{name: string, code: string}>
+     *
+     * @throws PaymentGatewayException
+     */
+    public function listBanks(): array
+    {
+        $data = $this->send('banks', 'bank-list', fn (PendingRequest $http) => $http->get('/bank', [
+            'country' => 'south africa', 'currency' => 'ZAR', 'perPage' => 100,
+        ]));
+
+        $banks = [];
+
+        foreach ($data as $bank) {
+            if (is_array($bank) && is_string($bank['name'] ?? null) && $bank['name'] !== '' && (is_string($bank['code'] ?? null) || is_int($bank['code'] ?? null)) && (string) $bank['code'] !== '' && ($bank['active'] ?? true) !== false) {
+                $banks[] = ['name' => $bank['name'], 'code' => (string) $bank['code']];
+            }
+        }
+
+        usort($banks, fn (array $a, array $b) => strcasecmp($a['name'], $b['name']));
+
+        return $banks;
+    }
+
+    /**
+     * POST /subaccount. Returns ONLY Paystack's subaccount code. Paystack's answer echoes the account number
+     * back; it is never read, kept or logged here. $label is our own host reference, used only in log lines.
+     *
+     * @throws PaymentGatewayException
+     */
+    public function createSubaccount(string $label, string $businessName, string $bankCode, Redacted $accountNumber, int $percentageCharge): string
+    {
+        $data = $this->send('subaccount_create', $label, fn (PendingRequest $http) => $http->post('/subaccount', $this->subaccountBody($businessName, $bankCode, $accountNumber, $percentageCharge)));
+
+        return $this->subaccountCodeFrom($data, 'subaccount_create', $label);
+    }
+
+    /**
+     * PUT /subaccount/{code}: change the details of an existing subaccount instead of creating a second one.
+     *
+     * @throws PaymentGatewayException
+     */
+    public function updateSubaccount(string $label, string $subaccountCode, string $businessName, string $bankCode, Redacted $accountNumber, int $percentageCharge): string
+    {
+        $data = $this->send('subaccount_update', $label, fn (PendingRequest $http) => $http->put('/subaccount/'.rawurlencode($subaccountCode), $this->subaccountBody($businessName, $bankCode, $accountNumber, $percentageCharge)));
+
+        return $this->subaccountCodeFrom($data, 'subaccount_update', $label) === $subaccountCode
+            ? $subaccountCode
+            : $this->invalid('subaccount_update', $label);
+    }
+
+    /**
+     * POST /refund for the whole of a transaction (no amount is sent, so Paystack refunds it in full).
+     * Returns Paystack's refund status ("pending", "processing", ...). The ticket is NOT refunded by this
+     * call; only the refund.processed webhook says so.
+     *
+     * @throws PaymentGatewayException
+     */
+    public function refundTransaction(string $reference): string
+    {
+        $data = $this->send('refund', $reference, fn (PendingRequest $http) => $http->post('/refund', ['transaction' => $reference]));
+
+        if (! is_string($data['status'] ?? null) || $data['status'] === '') {
+            return $this->invalid('refund', $reference);
+        }
+
+        return strtolower($data['status']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function checkoutFrom(array $data, string $reference): PaystackInitialization
+    {
+        $url = $data['authorization_url'] ?? null;
+
+        if (! is_string($url) || ! $this->isPaystackCheckoutUrl($url) || ! is_string($data['access_code'] ?? null) || ($data['reference'] ?? null) !== $reference) {
+            Log::warning('paystack.invalid_response', ['endpoint' => 'initialize', 'reference' => $reference]);
 
             throw PaymentGatewayException::because('invalid_response', 'Paystack sent an answer we could not use. Nothing was charged; please try again.');
         }
 
         return new PaystackInitialization($url, $reference);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function subaccountBody(string $businessName, string $bankCode, Redacted $accountNumber, int $percentageCharge): array
+    {
+        return [
+            'business_name' => $businessName,
+            'settlement_bank' => $bankCode,
+            'account_number' => $accountNumber->reveal(),
+            'percentage_charge' => $percentageCharge,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function subaccountCodeFrom(array $data, string $endpoint, string $label): string
+    {
+        $code = $data['subaccount_code'] ?? null;
+
+        return is_string($code) && $code !== '' ? $code : $this->invalid($endpoint, $label);
+    }
+
+    private function invalid(string $endpoint, string $label): never
+    {
+        Log::warning('paystack.invalid_response', ['endpoint' => $endpoint, 'reference' => $label]);
+
+        throw PaymentGatewayException::because('invalid_response', 'Paystack sent an answer we could not read.');
     }
 
     /**
