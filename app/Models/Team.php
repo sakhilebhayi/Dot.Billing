@@ -46,7 +46,14 @@ class Team extends JetstreamTeam
     {
         return [
             'personal_team' => 'boolean',
+            'infodot_deleted_at' => 'datetime',
         ];
+    }
+
+    /** InfoDot has said this company was deleted there. A flag for operators only; billing is untouched. */
+    public function deletedInInfoDot(): bool
+    {
+        return $this->infodot_deleted_at !== null;
     }
 
     /** The team's most recent subscription, live or ended (what the billing panel describes). */

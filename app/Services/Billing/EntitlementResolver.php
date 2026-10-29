@@ -15,7 +15,8 @@ use App\Models\Team;
  *  limits   null means unlimited
  *  seat_limit  plan seats plus the extra seats that are paid for (extra_seats); unlimited stays unlimited
  *
- * past_due keeps the plan's limits on purpose: whether to restrict is the consuming app's call.
+ * A company that is only in the registry (no team yet) is answered as 'none'. A registry company InfoDot deleted is
+ * unknown here (the controller answers 404). past_due keeps the plan's limits on purpose: whether to restrict is the consuming app's call.
  */
 class EntitlementResolver
 {
@@ -52,17 +53,36 @@ class EntitlementResolver
         $last = BillingSubscription::withoutGlobalScope('team')
             ->where('team_id', $team->id)->latest('id')->first();
 
+        return $this->freeTier($uuid, $last ? 'canceled' : 'none', $last ? ($last->ended_at ?? $last->canceled_at)?->toIso8601String() : null);
+    }
+
+    /**
+     * A company InfoDot has registered (infodot_companies, docs/company-registry.md) that has no team here yet:
+     * it cannot have subscribed, so it is answered exactly like a team that never subscribed.
+     *
+     * @return array<string, mixed>
+     */
+    public function forRegisteredCompany(string $companyUuid): array
+    {
+        return $this->freeTier(strtolower($companyUuid), 'none', null);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function freeTier(string $uuid, string $status, ?string $periodEnd): array
+    {
         $free = (array) config('billing.free_tier', []);
 
         return [
             'company_uuid' => $uuid,
-            'status' => $last ? 'canceled' : 'none',
+            'status' => $status,
             'plan' => null,
             'seat_limit' => $free['seat_limit'] ?? null,
             'extra_seats' => 0,
             'storage_gb' => $free['storage_gb'] ?? null,
             'features' => array_values($free['features'] ?? []),
-            'period_end' => $last ? ($last->ended_at ?? $last->canceled_at)?->toIso8601String() : null,
+            'period_end' => $periodEnd,
             'trial_ends_at' => null,
             'cancel_at_period_end' => false,
         ];

@@ -10,13 +10,13 @@
     </form>
 
     @if($searched && ! $team)
-        <div class="state-line attn" role="status"><span class="dot" aria-hidden="true"></span><span>No team here is linked to that company id.</span></div>
+        <div class="state-line attn" role="status"><span class="dot" aria-hidden="true"></span><span>No team here is linked to that company id.@if($registered) InfoDot has registered it{{ $registered->isDeleted() ? ' and reported it deleted' : '' }} ({{ $registered->name }}); it has no team here until someone signs in.@endif</span></div>
     @endif
 
     @if($team)
         <div class="dot-card" style="padding:0.5rem 1.5rem;margin-bottom:1.25rem;">
             <div class="readout">
-                <div class="k">Team</div><div class="v" style="font-family:'Inter',sans-serif;">{{ $team->name }}</div>
+                <div class="k">Team</div><div class="v" style="font-family:'Inter',sans-serif;">{{ $team->name }}@if($team->deletedInInfoDot()) <span class="pill void" title="InfoDot reported this company deleted on {{ $team->infodot_deleted_at->format('j M Y H:i') }}. Nothing here was cancelled or changed.">Deleted in InfoDot</span>@endif</div>
                 <div class="k">Company id</div><div class="v">{{ $entitlement['company_uuid'] }}</div>
                 <div class="k">Status</div><div class="v">{{ $entitlement['status'] }}@if($entitlement['cancel_at_period_end']) <span style="font-family:'Inter',sans-serif;color:#f59e0b;">cancels at period end</span>@endif</div>
                 <div class="k">Plan</div><div class="v">{{ $entitlement['plan']['slug'] ?? 'none (free tier)' }}</div>
