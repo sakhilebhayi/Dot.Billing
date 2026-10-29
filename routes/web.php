@@ -5,6 +5,7 @@ use App\Http\Controllers\Billing\DashboardController;
 use App\Http\Controllers\Billing\EntitlementLookupController;
 use App\Http\Controllers\Billing\InvoiceController;
 use App\Http\Controllers\Billing\InvoicePaymentController;
+use App\Http\Controllers\Billing\SeatsController;
 use App\Http\Controllers\Operator\PaymentEventController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -41,6 +42,9 @@ Route::middleware([
     Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
     Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
     Route::get('/invoices/{invoice}/print', [InvoiceController::class, 'print'])->name('invoices.print');
+
+    // Extra seats: owners and admins only (manage-billing); buying goes through SeatChange and pays through the invoice route below.
+    Route::get('/seats', SeatsController::class)->name('seats.show');
 
     // Paystack: start a payment, and where the payer lands afterwards. The webhook is in routes/webhooks.php.
     Route::post('/invoices/{invoice}/pay', [InvoicePaymentController::class, 'store'])

@@ -217,6 +217,12 @@
                 <span class="material-symbols-rounded nav-icon">receipt_long</span>
                 Invoices
             </a>
+            @if(Auth::user()?->currentTeam && Gate::allows('manage-billing', Auth::user()->currentTeam))
+            <a href="{{ route('seats.show') }}" class="nav-item {{ request()->routeIs('seats.*') ? 'active' : '' }}">
+                <span class="material-symbols-rounded nav-icon">group_add</span>
+                Seats
+            </a>
+            @endif
             @if(Auth::user()?->is_platform_operator)
             <div class="nav-section-label">Operator</div>
             <a href="{{ route('operator.plans.index') }}" class="nav-item {{ request()->routeIs('operator.plans.*') ? 'active' : '' }}">
