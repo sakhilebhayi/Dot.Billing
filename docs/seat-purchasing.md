@@ -1,7 +1,7 @@
 # Extra seat purchasing (R-13)
 
-A company can buy seats beyond the ones its plan includes. This is the service layer only: no customer or
-operator screen triggers it yet. Payment is the existing Paystack path; nothing here adds a payment route.
+A company can buy seats beyond the ones its plan includes. The service layer is below; the customer screen is
+`/seats` (see "The Seats screen"). Payment is the existing Paystack path; nothing here adds a payment route.
 
 ## The one rule that matters
 
@@ -102,11 +102,28 @@ All of these are configuration or one small method, not structure:
 | No seat purchase during a trial | on | `SeatChange::perform` |
 | Past-due subscriptions may still buy seats | allowed | not restricted |
 
+## The Seats screen (`/seats`)
+
+A customer screen for a company's **owner or admin** (the existing `manage-billing` gate against the current team; a plain
+member, a viewer, a person whose current team is not theirs, and a guest are refused, and so is every Livewire action). The
+sidebar shows a "Seats" link to the same people. It shows:
+
+- the live plan and billing cycle, the included seats (the plan's `seat_limit`, or "Unlimited"), the settled extra seats and
+  the total, the period end, and the extra-seat price for the team's cycle. No price (or 0) says plainly that extra seats are
+  not available on the plan and offers no form; nothing is defaulted. A priceless plan that still holds seats can only reduce.
+- an unpaid pro-rata purchase with its invoice, a **Pay now** form posting to the existing `invoices.pay` route (Paystack
+  hosted checkout, `InvoicePaymentController`) and a link to the invoice; with Paystack unconfigured it says why instead.
+- a reduction scheduled for period end ("drops from X to Y on ..., nothing is refunded").
+- a form for the desired **total** of extra seats. It calls `SeatChange::change` with a request key minted for the form and
+  kept until the number changes, so a double submit or a re-sent request is a replay (one invoice, one row). The result says
+  what was invoiced now (pro rata), that the seats count only after payment, or that a reduction takes effect at period end
+  with no refund. `SeatChange`'s refusals are shown in its own plain words.
+
+Component: `App\Livewire\Billing\SeatsPanel`; tests: `tests/Feature/Billing/SeatsScreenTest.php`.
+
 ## What remains
 
-- A customer screen and an operator screen to request a seat change (not part of this task).
-- The operator plan editor does not yet edit the two price fields. Until it does, a price can only be set in
-  the database (or `BillingPlan::update`), which keeps the default of "no price, nothing charged".
+- An operator screen to change a team's seats on its behalf (the customer screen exists).
 - Owner confirmation of the defaults above, and of whether seats should be restricted for `past_due` teams.
 - Consuming apps (InfoDot and others) reading `seat_limit` need no change; they may show `extra_seats`.
 - Shipping the migration to production is a normal deploy step; nothing here was deployed.

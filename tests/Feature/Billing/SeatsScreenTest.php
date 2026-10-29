@@ -49,6 +49,7 @@ class SeatsScreenTest extends TestCase
     {
         $owner = $this->makeOwner();
         $team = $owner->currentTeam;
+        $this->linkToInfoDot($team);
         $plan = $this->makePlan(array_merge(
             ['name' => 'Meridian Team', 'seat_limit' => 10],
             $withPrice ? ['extra_seat_price_monthly_cents' => self::SEAT_PRICE, 'extra_seat_price_annual_cents' => 10000] : [],
@@ -209,6 +210,21 @@ class SeatsScreenTest extends TestCase
 
         $this->assertSame(0, $this->invoices($team)->count());
         $this->assertSame(3, $sub->fresh()->extra_seats);
+    }
+
+    public function test_a_team_not_linked_to_an_infodot_company_cannot_buy_seats(): void
+    {
+        [$owner, $team, $sub] = $this->scene();
+        $team->forceFill(['infodot_team_uuid' => null])->save();
+
+        Livewire::actingAs($owner)->test(SeatsPanel::class)
+            ->assertSee('not linked to an InfoDot company')
+            ->assertDontSee('Confirm change')
+            ->set('targetExtraSeats', 3)->call('submit')
+            ->assertHasErrors('seats');
+
+        $this->assertSame(0, $this->invoices($team)->count());
+        $this->assertSame(0, $this->changes($sub)->count());
     }
 
     public function test_a_team_without_a_running_subscription_is_told_and_cannot_submit(): void

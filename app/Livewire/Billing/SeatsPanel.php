@@ -69,6 +69,16 @@ class SeatsPanel extends Component
         return $team;
     }
 
+    /**
+     * Seats only mean something for a company InfoDot knows: the other Dot apps read them through
+     * GET /api/entitlements/{infodot_team_uuid}. A team with no link would be charged for seats nobody can see.
+     */
+    #[Computed]
+    public function linkedToInfoDot(): bool
+    {
+        return filled($this->resolveCurrentTeam()?->infodot_team_uuid);
+    }
+
     /** The team's one live subscription, with what the screen needs. */
     #[Computed]
     public function subscription(): ?BillingSubscription
@@ -108,6 +118,12 @@ class SeatsPanel extends Component
                 'targetExtraSeats.max' => "A subscription can hold at most {$max} extra seats.",
             ],
         );
+
+        if (! filled($team->infodot_team_uuid)) {
+            $this->addError('seats', 'This team is not linked to an InfoDot company, so InfoDot would not see the seats. Open Dot.Billing from your company in InfoDot.');
+
+            return;
+        }
 
         $sub = $team->liveSubscription()->first();
 

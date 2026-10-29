@@ -5,6 +5,7 @@
     $unpaidInvoice = $unpaid?->invoice;
     $price = $plan?->extraSeatPriceFor($sub->billing_cycle);
     $sells = $plan?->sellsExtraSeats($sub->billing_cycle) === true;
+    $linked = $this->linkedToInfoDot;
     $extra = (int) ($sub?->extra_seats ?? 0);
     $included = $plan?->seat_limit;
     $periodEnd = $sub?->current_period_end;
@@ -41,7 +42,9 @@
         </div>
     </div>
 
-    @if(! $sells)
+    @if(! $linked)
+        <div class="state-line attn" role="status" style="margin-top:1.25rem;"><span class="dot" aria-hidden="true"></span><span>This team is not linked to an InfoDot company, so InfoDot would not see any seats bought here and you cannot buy seats for it. Open Dot.Billing from your company in InfoDot.</span></div>
+    @elseif(! $sells)
         <div class="state-line attn" role="status" style="margin-top:1.25rem;"><span class="dot" aria-hidden="true"></span><span>Extra seats are not available on the {{ $plan->name }} plan, so you cannot add seats here.@if($extra > 0) You can still reduce the extra seats you already have.@endif</span></div>
     @endif
 
@@ -84,7 +87,7 @@
         </div>
     @endif
 
-    @if($sells || $extra > 0)
+    @if($linked && ($sells || $extra > 0))
         <section class="dot-card" style="padding:1.5rem;margin-top:1.25rem;" aria-labelledby="seats-form-title">
             <h3 class="dot-h" id="seats-form-title">Change extra seats</h3>
             <p class="dot-muted" style="margin:6px 0 1rem;max-width:42rem;">
