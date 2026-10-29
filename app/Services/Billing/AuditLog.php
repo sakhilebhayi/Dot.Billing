@@ -6,7 +6,9 @@ use App\Models\BillingAuditEvent;
 use App\Models\BillingInvoice;
 use App\Models\BillingPayment;
 use App\Models\BillingSubscription;
+use App\Models\PayoutAccount;
 use App\Models\Team;
+use App\Models\TicketPayment;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
@@ -18,10 +20,10 @@ class AuditLog
     /**
      * @param  array<string, mixed>  $meta
      */
-    public function record(string $action, Team|int $team, ?User $actor = null, ?Model $subject = null, array $meta = []): BillingAuditEvent
+    public function record(string $action, Team|int|null $team, ?User $actor = null, ?Model $subject = null, array $meta = []): BillingAuditEvent
     {
         return BillingAuditEvent::create([
-            'team_id' => $team instanceof Team ? $team->id : $team,
+            'team_id' => $team instanceof Team ? $team->id : $team, // null for marketplace events, which belong to no team
             'actor_id' => $actor?->id,
             'action' => $action,
             'subject_type' => $subject ? $this->subjectType($subject) : null,
@@ -36,6 +38,8 @@ class AuditLog
             $subject instanceof BillingSubscription => 'subscription',
             $subject instanceof BillingInvoice => 'invoice',
             $subject instanceof BillingPayment => 'payment',
+            $subject instanceof PayoutAccount => 'payout_account',
+            $subject instanceof TicketPayment => 'ticket_payment',
             default => strtolower(class_basename($subject)),
         };
     }
