@@ -22,7 +22,7 @@ class SubscriptionLifecycle
     /** Stops a corrupt row from looping: more than this many periods in one run is not a catch-up. */
     private const MAX_PERIODS_PER_RUN = 36;
 
-    public function __construct(private InvoiceGenerator $invoices, private AuditLog $audit) {}
+    public function __construct(private InvoiceGenerator $invoices, private AuditLog $audit, private SeatChange $seats) {}
 
     /**
      * @return array{advanced: int, ended: int, past_due: int, recovered: int, failed: int}
@@ -122,6 +122,10 @@ class SubscriptionLifecycle
         }
 
         $cycle = $changes['billing_cycle'] ?? $sub->billing_cycle;
+        $plan = isset($changes['plan_id']) ? BillingPlan::findOrFail($changes['plan_id']) : $sub->plan;
+
+        // Scheduled seat reductions take effect now; seats are dropped if the plan no longer sells them.
+        $changes += $this->seats->onRenewal($sub, $plan, $cycle);
 
         $sub->forceFill($changes + [
             'pending_plan_id' => null,

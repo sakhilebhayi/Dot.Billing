@@ -31,6 +31,22 @@ return [
         'tax_rate_percent' => env('BILLING_TAX_RATE', '0'),
     ],
 
+    /*
+    | Extra seats (see docs/seat-purchasing.md). These are defaults chosen by engineering and need the
+    | owner's confirmation. Nothing here sets a price: a plan sells extra seats only when an operator has
+    | set its extra_seat_price_* columns.
+    |
+    |  max_extra   the most extra seats one subscription may hold
+    |  add_charge  'prorata'     charge the rest of the current period by actual days, rounded half up
+    |              'full_period' charge a full period's price for the added seats straight away
+    |
+    | Reducing seats is always scheduled for the period end with no refund or credit; that is not a setting.
+    */
+    'seats' => [
+        'max_extra' => (int) env('BILLING_SEATS_MAX_EXTRA', 500),
+        'add_charge' => env('BILLING_SEATS_ADD_CHARGE', 'prorata'),
+    ],
+
     // Printed on the invoice. Anything left blank is simply not printed; nothing is invented.
     'issuer' => [
         'name' => env('BILLING_ISSUER_NAME'),

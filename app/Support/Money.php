@@ -125,6 +125,25 @@ final readonly class Money implements JsonSerializable
         return new self($rounded, $this->currency);
     }
 
+    /** This amount times a whole number (a unit price times a quantity). */
+    public function times(int $factor): self
+    {
+        return new self($this->cents * $factor, $this->currency);
+    }
+
+    /**
+     * $part out of $whole of this amount (days left of days in the period), rounded half up to the cent,
+     * integers only. $whole must be positive and $part between 0 and $whole is the intended use.
+     */
+    public function proRata(int $part, int $whole): self
+    {
+        if ($whole <= 0 || $part < 0 || $this->cents < 0) {
+            throw new InvalidArgumentException('Pro rata needs a positive whole and non-negative part and amount.');
+        }
+
+        return new self(intdiv(2 * $this->cents * $part + $whole, 2 * $whole), $this->currency);
+    }
+
     public function isZero(): bool
     {
         return $this->cents === 0;

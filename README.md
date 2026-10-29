@@ -162,7 +162,8 @@ Each platform has its own secret in `BILLING_ENTITLEMENT_SECRET_<KEY>` (a blank 
 call). Bad or stale signatures, unknown platforms and blank secrets all return the same `401`; an unknown company
 is a generic `404`, and only after authentication. The response carries `status` (`active`, `trialing`,
 `past_due`, `canceled`, `none`), the plan, `seat_limit` and `storage_gb` (`null` = unlimited), `features`,
-`period_end` and `cancel_at_period_end`, with an `ETag`. A company with no live subscription gets the free-tier
+`period_end` and `cancel_at_period_end`, with an `ETag`. `seat_limit` is the plan's seats plus the extra seats the
+company has paid for, reported separately as `extra_seats` (see `docs/seat-purchasing.md`). A company with no live subscription gets the free-tier
 limits from `config/billing.php` (placeholders: set `BILLING_FREE_SEAT_LIMIT` and `BILLING_FREE_STORAGE_GB`).
 `past_due` keeps the plan's limits; whether to restrict is the consuming app's decision. The signature does not
 cover the URL (the scheme's known limit). Operators can check any company at `/operator/entitlements`.
