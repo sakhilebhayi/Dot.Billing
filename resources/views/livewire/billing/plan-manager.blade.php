@@ -76,6 +76,16 @@
                 @error('seatLimit')<div class="field-error" role="alert">{{ $message }}</div>@enderror
             </div>
             <div>
+                <label class="dot-label" for="pm-xseat-m">Extra seat, monthly</label>
+                <input id="pm-xseat-m" type="text" inputmode="decimal" wire:model="extraSeatMonthly" class="dot-input" placeholder="blank = not sold">
+                @error('extraSeatMonthly')<div class="field-error" role="alert">{{ $message }}</div>@enderror
+            </div>
+            <div>
+                <label class="dot-label" for="pm-xseat-a">Extra seat, annual</label>
+                <input id="pm-xseat-a" type="text" inputmode="decimal" wire:model="extraSeatAnnual" class="dot-input" placeholder="blank = not sold">
+                @error('extraSeatAnnual')<div class="field-error" role="alert">{{ $message }}</div>@enderror
+            </div>
+            <div>
                 <label class="dot-label" for="pm-storage">Storage (GB)</label>
                 <input id="pm-storage" type="text" inputmode="numeric" wire:model="storageGb" class="dot-input" placeholder="blank = unlimited">
                 @error('storageGb')<div class="field-error" role="alert">{{ $message }}</div>@enderror

@@ -157,4 +157,43 @@ class PlanManagerTest extends TestCase
     {
         $this->assertFalse(method_exists(PlanManager::class, 'delete'));
     }
+
+    public function test_extra_seat_prices_are_blank_unless_an_operator_sets_them(): void
+    {
+        $operator = $this->makeOperator();
+
+        Livewire::actingAs($operator)->test(PlanManager::class)
+            ->set('name', 'Seat Plan')->set('slug', 'seat-plan')->set('priceMonthly', '100')->set('priceAnnual', '1000')->set('seatLimit', '3')
+            ->call('save')->assertHasNoErrors();
+        $plan = BillingPlan::where('slug', 'seat-plan')->firstOrFail();
+        $this->assertNull($plan->extra_seat_price_monthly_cents);
+        $this->assertNull($plan->extra_seat_price_annual_cents);
+        $this->assertFalse($plan->sellsExtraSeats('monthly'));
+
+        Livewire::actingAs($operator)->test(PlanManager::class)
+            ->call('edit', $plan->id)
+            ->set('extraSeatMonthly', '49.50')->set('extraSeatAnnual', '495')
+            ->call('save')->assertHasNoErrors();
+        $plan->refresh();
+        $this->assertSame([4950, 49500], [$plan->extra_seat_price_monthly_cents, $plan->extra_seat_price_annual_cents]);
+        $this->assertTrue($plan->sellsExtraSeats('monthly'));
+
+        Livewire::actingAs($operator)->test(PlanManager::class)
+            ->call('edit', $plan->id)
+            ->assertSet('extraSeatMonthly', '49.50')
+            ->set('extraSeatMonthly', '')->set('extraSeatAnnual', '')
+            ->call('save')->assertHasNoErrors();
+        $this->assertNull($plan->fresh()->extra_seat_price_monthly_cents, 'clearing the field stops selling extra seats');
+    }
+
+    public function test_an_extra_seat_price_must_be_a_real_amount_above_zero(): void
+    {
+        $plan = $this->makePlan();
+
+        foreach (['0', '0.00', '12,50', 'abc', '-5'] as $bad) {
+            Livewire::actingAs($this->makeOperator())->test(PlanManager::class)
+                ->call('edit', $plan->id)->set('extraSeatMonthly', $bad)->call('save')->assertHasErrors('extraSeatMonthly');
+        }
+        $this->assertNull($plan->fresh()->extra_seat_price_monthly_cents);
+    }
 }
