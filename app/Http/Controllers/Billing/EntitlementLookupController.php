@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Billing;
 
 use App\Http\Controllers\Controller;
+use App\Models\InfodotCompany;
 use App\Models\Team;
 use App\Services\Billing\EntitlementResolver;
 use Illuminate\Http\Request;
@@ -20,15 +21,18 @@ class EntitlementLookupController extends Controller
         $company = trim((string) $request->query('company', ''));
         $team = null;
         $entitlement = null;
+        $registered = null;
 
         if ($company !== '' && Str::isUuid($company)) {
             $team = Team::where('infodot_team_uuid', strtolower($company))->first();
             $entitlement = $team ? $resolver->forTeam($team) : null;
+            $registered = $team ? null : InfodotCompany::where('company_uuid', strtolower($company))->first();
         }
 
         return view('operator.entitlements', [
             'company' => $company,
             'team' => $team,
+            'registered' => $registered,
             'entitlement' => $entitlement,
             'searched' => $company !== '',
         ]);

@@ -11,7 +11,7 @@
         <div class="dot-card" style="padding:1.25rem 1.5rem;margin-bottom:1rem;" wire:key="case-{{ $case->id }}">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
                 <div>
-                    <div style="font-family:'Syne',sans-serif;font-weight:700;color:#f4f4f5;">{{ $case->team->name }}</div>
+                    <div style="font-family:'Syne',sans-serif;font-weight:700;color:#f4f4f5;">{{ $case->team->name }}@if($case->team->deletedInInfoDot()) <span class="pill void" style="margin-left:6px;" title="InfoDot reported this company deleted. Billing is unchanged; decide with the owner.">Deleted in InfoDot</span>@endif</div>
                     <div class="dot-muted" style="margin-top:0.2rem;">
                         {{ $case->reason === 'invoice_overdue' ? 'Invoice overdue' : 'Payment failed' }}
                         @if($case->invoice)

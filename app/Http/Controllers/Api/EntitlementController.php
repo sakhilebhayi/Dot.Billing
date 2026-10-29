@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\InfodotCompany;
 use App\Models\Team;
 use App\Services\Billing\EntitlementResolver;
 use App\Services\Billing\EntitlementSignature;
@@ -21,8 +22,9 @@ use Illuminate\Support\Str;
  * same generic 401, and authentication happens BEFORE the company is looked up, so an unauthenticated
  * caller cannot learn which companies exist.
  *
- * company_uuid is InfoDot's id for the company, matched against teams.infodot_team_uuid. An unknown
- * company is a generic 404.
+ * company_uuid is InfoDot's id for the company, matched against teams.infodot_team_uuid. A company with no team
+ * that InfoDot has registered (POST /api/companies, docs/company-registry.md) and not deleted answers like a team
+ * that never subscribed. Anything else, including a registered company InfoDot deleted, is a generic 404.
  */
 class EntitlementController extends Controller
 {
@@ -35,15 +37,18 @@ class EntitlementController extends Controller
             return response()->json(['error' => 'invalid_request'], 401);
         }
 
-        $team = Str::isUuid($companyUuid)
-            ? Team::where('infodot_team_uuid', strtolower($companyUuid))->first()
-            : null;
+        $uuid = strtolower($companyUuid);
+        $team = Str::isUuid($uuid) ? Team::where('infodot_team_uuid', $uuid)->first() : null;
 
-        if (! $team) {
+        if ($team) {
+            $payload = $resolver->forTeam($team);
+        } elseif (Str::isUuid($uuid) && InfodotCompany::where('company_uuid', $uuid)->whereNull('deleted_at')->exists()) {
+            // Registered by InfoDot but nobody has signed in to Billing yet, so there is no team: never subscribed.
+            $payload = $resolver->forRegisteredCompany($uuid);
+        } else {
             return response()->json(['error' => 'not_found'], 404);
         }
 
-        $payload = $resolver->forTeam($team);
         $etag = '"'.sha1((string) json_encode($payload)).'"';
 
         if (in_array($etag, array_map('trim', explode(',', (string) $request->header('If-None-Match'))), true)) {

@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Controllers\Api\CompanyRegistryController;
 use App\Http\Controllers\Api\EntitlementController;
 use App\Http\Controllers\Api\Marketplace\HostAgreementController;
 use App\Http\Controllers\Api\Marketplace\HostDebtController;
 use App\Http\Controllers\Api\Marketplace\PayoutAccountController;
 use App\Http\Controllers\Api\Marketplace\PayoutBanksController;
 use App\Http\Controllers\Api\Marketplace\SeminarTicketController;
+use App\Http\Middleware\EnsureInfoDotCaller;
 use App\Http\Middleware\EnsureMarketplaceCaller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -19,6 +21,13 @@ Route::get('/user', function (Request $request) {
 Route::get('/entitlements/{companyUuid}', EntitlementController::class)
     ->middleware('throttle:120,1')
     ->name('api.entitlements.show');
+
+// Company registry (docs/company-registry.md): InfoDot reports that a company exists, was renamed or was deleted.
+// Only the platform "infodot" may call, signed like the entitlements call (the raw body is signed). Creates no team
+// or user, and a deletion only flags; it never cancels anything.
+Route::post('/companies', [CompanyRegistryController::class, 'store'])
+    ->middleware(['throttle:120,1', EnsureInfoDotCaller::class])
+    ->name('api.companies.store');
 
 // Seminar ticket marketplace (docs/seminar-payments.md). Server to server, signed by the platform "infodot"
 // exactly like the entitlements call (the raw body is signed for a POST). OFF unless
