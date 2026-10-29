@@ -13,6 +13,7 @@ use App\Models\Team;
  *           canceled                        its last subscription ended; free-tier limits apply
  *           none                            it never subscribed; free-tier limits apply
  *  limits   null means unlimited
+ *  seat_limit  plan seats plus the extra seats that are paid for (extra_seats); unlimited stays unlimited
  *
  * past_due keeps the plan's limits on purpose: whether to restrict is the consuming app's call.
  */
@@ -31,12 +32,15 @@ class EntitlementResolver
 
         if ($live) {
             $plan = $live->plan;
+            $extraSeats = max(0, (int) $live->extra_seats);
 
             return [
                 'company_uuid' => $uuid,
                 'status' => $live->status,
                 'plan' => ['slug' => $plan->slug, 'name' => $plan->name],
-                'seat_limit' => $plan->seat_limit,
+                // Settled extra seats only: a seat bought but not yet paid for is not in extra_seats.
+                'seat_limit' => $plan->seat_limit === null ? null : (int) $plan->seat_limit + $extraSeats,
+                'extra_seats' => $extraSeats,
                 'storage_gb' => $plan->storage_gb,
                 'features' => array_values($plan->features ?? []),
                 'period_end' => $live->current_period_end?->toIso8601String(),
@@ -55,6 +59,7 @@ class EntitlementResolver
             'status' => $last ? 'canceled' : 'none',
             'plan' => null,
             'seat_limit' => $free['seat_limit'] ?? null,
+            'extra_seats' => 0,
             'storage_gb' => $free['storage_gb'] ?? null,
             'features' => array_values($free['features'] ?? []),
             'period_end' => $last ? ($last->ended_at ?? $last->canceled_at)?->toIso8601String() : null,

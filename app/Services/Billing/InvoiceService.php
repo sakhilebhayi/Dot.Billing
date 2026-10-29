@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
  */
 class InvoiceService
 {
-    public function __construct(private AuditLog $audit) {}
+    public function __construct(private AuditLog $audit, private SeatChange $seats) {}
 
     public function finalize(BillingInvoice $invoice, ?User $actor = null): BillingInvoice
     {
@@ -51,6 +51,8 @@ class InvoiceService
                 'invoice_number' => $invoice->invoice_number,
                 'reason' => $reason,
             ]);
+
+            $this->seats->invoiceVoided($invoice);
 
             return $invoice;
         });

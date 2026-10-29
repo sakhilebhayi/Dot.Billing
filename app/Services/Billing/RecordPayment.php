@@ -30,7 +30,7 @@ use Illuminate\Support\Facades\DB;
  */
 class RecordPayment
 {
-    public function __construct(private AuditLog $audit) {}
+    public function __construct(private AuditLog $audit, private SeatChange $seats) {}
 
     /**
      * @param  array<string, mixed>  $payload
@@ -142,6 +142,9 @@ class RecordPayment
 
         if ($paidInFull) {
             $this->audit->record('invoice.paid', $locked->team_id, $actor, $locked, ['invoice_number' => $locked->invoice_number]);
+
+            // A paid seat purchase is the moment its seats start counting (see SeatChange::settleInvoice).
+            $this->seats->settleInvoice($locked);
 
             DunningCase::where('invoice_id', $locked->id)
                 ->whereIn('status', ['open', 'grace'])

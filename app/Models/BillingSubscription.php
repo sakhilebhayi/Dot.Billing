@@ -21,6 +21,7 @@ class BillingSubscription extends Model
         'trial_ends_at', 'current_period_start', 'current_period_end',
         'canceled_at', 'ended_at', 'cancel_at_period_end',
         'pending_plan_id', 'pending_billing_cycle', 'stripe_subscription_id',
+        'extra_seats', 'pending_extra_seats',
     ];
 
     protected $casts = [
@@ -30,6 +31,8 @@ class BillingSubscription extends Model
         'canceled_at' => 'datetime',
         'ended_at' => 'datetime',
         'cancel_at_period_end' => 'boolean',
+        'extra_seats' => 'integer',
+        'pending_extra_seats' => 'integer',
     ];
 
     public function team(): BelongsTo
