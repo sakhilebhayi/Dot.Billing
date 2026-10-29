@@ -69,7 +69,8 @@ class PaystackClient
             'reference' => $ticket->paystack_reference,
             'subaccount' => $subaccountCode,
             'bearer' => 'subaccount',
-            'transaction_charge' => $ticket->platform_fee_cents,
+            // InfoDot's whole take as one flat amount: the platform fee plus any extra recovery of a lost chargeback.
+            'transaction_charge' => $ticket->chargeCents(),
             'metadata' => json_encode([
                 'kind' => 'seminar_ticket',
                 'ticket_ref' => $ticket->ticket_ref,

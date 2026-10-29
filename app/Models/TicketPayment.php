@@ -37,6 +37,7 @@ class TicketPayment extends Model
         'ticket_ref', 'payout_account_id', 'buyer_email', 'amount_cents', 'platform_fee_cents', 'currency', 'description',
         'return_url', 'paystack_reference', 'authorization_url', 'paystack_transaction_id', 'status', 'failure_reason',
         'refunded_cents', 'refund_requested_at', 'paid_at', 'refunded_at',
+        'recovery_cents', 'recovery_applied_cents', 'recovery_reversed_cents',
     ];
 
     protected $hidden = ['authorization_url'];
@@ -45,6 +46,9 @@ class TicketPayment extends Model
         'amount_cents' => 'integer',
         'platform_fee_cents' => 'integer',
         'refunded_cents' => 'integer',
+        'recovery_cents' => 'integer',
+        'recovery_applied_cents' => 'integer',
+        'recovery_reversed_cents' => 'integer',
         'refund_requested_at' => 'datetime',
         'paid_at' => 'datetime',
         'refunded_at' => 'datetime',
@@ -63,6 +67,21 @@ class TicketPayment extends Model
     public function disputes(): HasMany
     {
         return $this->hasMany(TicketDispute::class);
+    }
+
+    /**
+     * InfoDot's whole take on this ticket, in cents: the platform fee plus any extra recovery of a lost chargeback.
+     * This is the flat transaction_charge sent to Paystack.
+     */
+    public function chargeCents(): int
+    {
+        return $this->platform_fee_cents + $this->recovery_cents;
+    }
+
+    /** The host's share before Paystack's processing fee: the price minus the platform fee (never reduced by recovery). */
+    public function hostShareCents(): int
+    {
+        return max(0, $this->amount_cents - $this->platform_fee_cents);
     }
 
     /** The status this ticket has when no dispute is in the way, from what has been refunded so far. */
@@ -91,6 +110,7 @@ class TicketPayment extends Model
             'status' => $this->status,
             'amount_cents' => $this->amount_cents,
             'platform_fee_cents' => $this->platform_fee_cents,
+            'recovery_cents' => $this->recovery_cents,
             'currency' => $this->currency,
             'refunded_cents' => $this->refunded_cents,
             'dispute_status' => $this->disputeStatus(),

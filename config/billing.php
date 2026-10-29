@@ -105,6 +105,8 @@ return [
     |  callback_url      where signed ticket.paid / ticket.refunded events are POSTed (https only)
     |  callback_secret   signs those events (HMAC-SHA256, same scheme as the entitlements calls)
     |  return_hosts      comma separated hosts a ticket's return_url may point at; empty = reject any return_url
+    |  agreement_version the host term version that counts as current (a ticket needs an accepted current term)
+    |  recovery_cap_percent  most of the host's share of a ticket taken to recover a lost chargeback, 0 to 100
     */
     'marketplace' => [
         'enabled' => (bool) env('BILLING_MARKETPLACE_ENABLED', false),
@@ -117,6 +119,12 @@ return [
         'callback_timeout' => 5,
         'return_hosts' => array_values(array_filter(array_map(fn ($h) => strtolower(trim($h)), explode(',', (string) env('BILLING_MARKETPLACE_RETURN_HOSTS', ''))))),
         'banks_cache_seconds' => 6 * 3600,
+        // The version of the host term (docs/host-agreement-draft.md) a host must have accepted before a ticket can be
+        // created for them. Change it when the wording changes: every host must then accept again.
+        'agreement_version' => env('BILLING_MARKETPLACE_AGREEMENT_VERSION', 'v1'),
+        // Most of the HOST'S share of a ticket (price minus platform fee) that may be taken as extra fee to recover a
+        // lost chargeback, a whole percent 0 to 100. 0 turns recovery off.
+        'recovery_cap_percent' => env('BILLING_MARKETPLACE_RECOVERY_CAP_PERCENT', 50),
     ],
 
     // What the entitlements API reports for a company that has no live subscription.

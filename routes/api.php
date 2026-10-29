@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\EntitlementController;
+use App\Http\Controllers\Api\Marketplace\HostAgreementController;
+use App\Http\Controllers\Api\Marketplace\HostDebtController;
 use App\Http\Controllers\Api\Marketplace\PayoutAccountController;
 use App\Http\Controllers\Api\Marketplace\PayoutBanksController;
 use App\Http\Controllers\Api\Marketplace\SeminarTicketController;
@@ -25,6 +27,9 @@ Route::get('/entitlements/{companyUuid}', EntitlementController::class)
 Route::middleware(['throttle:120,1', EnsureMarketplaceCaller::class])->group(function () {
     Route::get('/payout-banks', PayoutBanksController::class)->name('api.marketplace.banks');
     Route::post('/payout-accounts', [PayoutAccountController::class, 'store'])->name('api.marketplace.payout-accounts.store');
+    Route::post('/payout-accounts/{id}/agreement', [HostAgreementController::class, 'store'])->where('id', '[0-9]{1,18}')->name('api.marketplace.agreement.store');
+    Route::get('/payout-accounts/{id}/debts', [HostDebtController::class, 'index'])->where('id', '[0-9]{1,18}')->name('api.marketplace.debts.index');
+    Route::post('/host-debts/{id}/write-off', [HostDebtController::class, 'writeOff'])->where('id', '[0-9]{1,18}')->name('api.marketplace.debts.write-off');
     Route::post('/seminar-tickets', [SeminarTicketController::class, 'store'])->name('api.marketplace.tickets.store');
     Route::get('/seminar-tickets/{ticketRef}', [SeminarTicketController::class, 'show'])->where('ticketRef', '[A-Za-z0-9._:-]{1,64}')->name('api.marketplace.tickets.show');
     Route::post('/seminar-tickets/{ticketRef}/refund', [SeminarTicketController::class, 'refund'])->where('ticketRef', '[A-Za-z0-9._:-]{1,64}')->name('api.marketplace.tickets.refund');
