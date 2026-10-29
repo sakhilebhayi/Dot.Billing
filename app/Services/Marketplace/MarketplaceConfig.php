@@ -30,9 +30,35 @@ class MarketplaceConfig
         return is_int($raw) && $raw >= 0 && $raw <= 50 ? $raw : null;
     }
 
+    /**
+     * The most of the HOST'S share of one ticket that may go to InfoDot as recovery of a lost chargeback, as a whole
+     * percent 0 to 100, or null when the configured value is not an integer in that range (the marketplace then
+     * refuses to take money rather than guess). 0 switches recovery off.
+     */
+    public function recoveryCapPercent(): ?int
+    {
+        $raw = config('billing.marketplace.recovery_cap_percent', 50);
+
+        if (is_string($raw) && preg_match('/^\d{1,3}$/', trim($raw))) {
+            $raw = (int) trim($raw);
+        }
+
+        return is_int($raw) && $raw >= 0 && $raw <= 100 ? $raw : null;
+    }
+
+    /** The version of the host term that counts as current, or null when the configured value is unusable. */
+    public function agreementVersion(): ?string
+    {
+        $raw = config('billing.marketplace.agreement_version', 'v1');
+
+        return is_string($raw) && preg_match('/^[A-Za-z0-9._-]{1,32}$/', trim($raw)) ? trim($raw) : null;
+    }
+
     public function isValid(): bool
     {
         return $this->platformPercent() !== null
+            && $this->recoveryCapPercent() !== null
+            && $this->agreementVersion() !== null
             && $this->currencies() !== []
             && $this->minAmountCents() >= 1
             && $this->maxAmountCents() >= $this->minAmountCents();

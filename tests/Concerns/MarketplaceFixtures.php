@@ -2,6 +2,7 @@
 
 namespace Tests\Concerns;
 
+use App\Models\HostAgreement;
 use App\Models\PayoutAccount;
 use App\Models\TicketPayment;
 use Illuminate\Foundation\Testing\TestCase;
@@ -47,6 +48,8 @@ trait MarketplaceFixtures
                 'callback_timeout' => 5,
                 'return_hosts' => ['infodot.example'],
                 'banks_cache_seconds' => 21600,
+                'agreement_version' => 'v1',
+                'recovery_cap_percent' => 50,
             ], $overrides),
             'billing.entitlements.secrets.infodot' => $this->infodotSecret,
             'billing.entitlements.secrets.files' => 'files-entitlement-secret-for-tests-0003',
@@ -108,9 +111,13 @@ trait MarketplaceFixtures
         $this->fakeHttp($stubs + $defaults);
     }
 
-    protected function makePayoutAccount(array $attributes = []): PayoutAccount
+    /**
+     * A payout account. By default its host has accepted the CURRENT host agreement, because no ticket can be
+     * created without one; pass `$agreed = false` for a host who has not.
+     */
+    protected function makePayoutAccount(array $attributes = [], bool $agreed = true): PayoutAccount
     {
-        return PayoutAccount::create(array_merge([
+        $account = PayoutAccount::create(array_merge([
             'host_ref' => 'host-'.Str::lower(Str::random(8)),
             'paystack_subaccount_code' => 'ACCT_test000000001',
             'bank_code' => '051001',
@@ -118,6 +125,21 @@ trait MarketplaceFixtures
             'business_name' => 'Test Host (Pty) Ltd',
             'status' => PayoutAccount::ACTIVE,
         ], $attributes));
+
+        if ($agreed) {
+            $this->acceptAgreement($account);
+        }
+
+        return $account;
+    }
+
+    protected function acceptAgreement(PayoutAccount $account, ?string $version = null): HostAgreement
+    {
+        return $account->agreements()->create([
+            'version' => $version ?? (string) config('billing.marketplace.agreement_version', 'v1'),
+            'accepted_at' => now(),
+            'accepted_by_ref' => 'host-owner-1',
+        ]);
     }
 
     protected function makeTicket(array $attributes = [], ?PayoutAccount $account = null): TicketPayment

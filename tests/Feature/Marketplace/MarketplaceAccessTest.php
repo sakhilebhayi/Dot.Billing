@@ -42,6 +42,9 @@ class MarketplaceAccessTest extends TestCase
             'show ticket' => ['GET', '/api/seminar-tickets/t1', null],
             'refund ticket' => ['POST', '/api/seminar-tickets/t1/refund', null],
             'cancel ticket' => ['POST', '/api/seminar-tickets/t1/cancel', null],
+            'host agreement' => ['POST', '/api/payout-accounts/1/agreement', ['version' => 'v1', 'accepted_by_ref' => 'u1']],
+            'host debts' => ['GET', '/api/payout-accounts/1/debts', null],
+            'debt write-off' => ['POST', '/api/host-debts/1/write-off', ['note' => 'x', 'written_off_by_ref' => 'm1']],
         ];
     }
 

@@ -36,6 +36,8 @@ Rounding examples at 10%: R10.05 gives a R1.01 fee (100.5 rounds up); R10.04 giv
 1. InfoDot calls `GET /api/payout-banks` to show the host a bank list.
 2. InfoDot calls `POST /api/payout-accounts` once per host. Dot.Billing creates a Paystack **subaccount** and keeps
    only its code and the last four digits of the account. Posting the same `host_ref` again updates that subaccount.
+   Before the host can sell, InfoDot shows them the host term ([host-agreement-draft.md](host-agreement-draft.md)) and records the
+   acceptance with `POST /api/payout-accounts/{id}/agreement` (see "Chargeback recovery" below).
 3. For each sale InfoDot calls `POST /api/seminar-tickets` and sends the attendee to the returned
    `authorization_url` (Paystack's checkout).
 4. When the attendee pays, Paystack calls `POST /webhooks/paystack` with `charge.success`. Dot.Billing **verifies the
@@ -93,13 +95,15 @@ Body: `ticket_ref` (string, up to 64, InfoDot's idempotency key), `payout_accoun
 
 - `amount_cents` must be between `BILLING_MARKETPLACE_MIN_AMOUNT_CENTS` (default 500) and
   `BILLING_MARKETPLACE_MAX_AMOUNT_CENTS` (default 5000000), inclusive. `currency` must be in the configured list.
-  The payout account must exist and be `active` (`422 payout_account_unavailable` otherwise).
+  The payout account must exist and be `active` (`422 payout_account_unavailable` otherwise), and its host must have accepted the
+  **current** version of the host agreement (`422 agreement_required` otherwise; nothing is created and Paystack is not called).
 - `return_url` (optional, https only, up to 300 characters) is passed to Paystack as the transaction `callback_url` so
   the attendee lands back on InfoDot. Its host must be in `BILLING_MARKETPLACE_RETURN_HOSTS` (comma separated,
   exact host match, no wildcards). **The default is empty, which rejects every `return_url`**, so the feature never
   redirects to an unlisted host. An unlisted host, a credentials-in-URL trick or a backslash is a `422`.
 - Creates a `ticket_payments` row `pending` with a generated unique `paystack_reference` (`dbt-...`) and initialises
-  the Paystack transaction with the host's `subaccount`, `bearer` = `subaccount` and the flat `transaction_charge`.
+  the Paystack transaction with the host's `subaccount`, `bearer` = `subaccount` and the flat `transaction_charge`
+  (the platform fee, plus `recovery_cents` when the host owes a lost chargeback; see "Chargeback recovery").
 - Returns `201` `{ticket_ref, reference, authorization_url, status}`.
 - **Idempotent on `ticket_ref`.** The same request again returns `200` with the same result and makes no second
   Paystack call. Same `ticket_ref` with different fields is `409 ticket_conflict`. A paid or refunded `ticket_ref` is
@@ -108,8 +112,9 @@ Body: `ticket_ref` (string, up to 64, InfoDot's idempotency key), `payout_accoun
   repeated.
 
 ### `GET /api/seminar-tickets/{ticket_ref}`
-`{ticket_ref, status, amount_cents, platform_fee_cents, currency, refunded_cents, dispute_status, paid_at, refunded_at}`,
-for reconciliation. `amount_cents` is always the original ticket amount.
+`{ticket_ref, status, amount_cents, platform_fee_cents, recovery_cents, currency, refunded_cents, dispute_status, paid_at, refunded_at}`,
+for reconciliation. `amount_cents` is always the original ticket amount. `recovery_cents` is the extra fee asked for on this
+ticket to recover a lost chargeback (0 for almost every ticket); InfoDot's whole take on the ticket is `platform_fee_cents + recovery_cents`.
 
 | `status` | Meaning |
 |---|---|
@@ -185,7 +190,19 @@ ticket.disputed         {event, ticket_ref, reference, amount_cents, currency, o
 ticket.dispute_resolved {event, ticket_ref, reference, amount_cents, currency, outcome, resolved_at}
 ```
 
-`amount_cents` is always the ORIGINAL ticket amount. `ticket.refunded` is sent once per processed refund (a ticket can have several
+```
+host_debt.opened        {event, ticket_ref, debt_id, payout_account_id, host_ref, currency, amount_cents, recovered_cents, remaining_cents, opened_at}
+host_debt.cleared       {... same fields ..., cleared_at}
+host_debt.reopened      {... same fields ..., reopened_at}      (a refund gave recovery back to a cleared debt)
+host_debt.written_off   {... same fields ..., written_off_at, written_off_cents, written_off_by_ref, note}
+```
+
+For the `host_debt.*` events `ticket_ref` is the ticket whose chargeback made the debt (one debt per ticket), and the `Idempotency-Key` is
+`{event}:{ticket_ref}:{opened_at|cleared_at|reopened_at|written_off_at}`. `host_debt.reopened` is not in the owner's brief: it exists because a
+refund can put a cleared debt back to open, and InfoDot would otherwise keep showing it as cleared.
+
+`amount_cents` is always the ORIGINAL ticket amount. `ticket.paid` still carries the base `platform_fee_cents` only; read
+`recovery_cents` from the status endpoint. `ticket.refunded` is sent once per processed refund (a ticket can have several
 partial refunds); `outcome` is `won`, `lost` or `other`.
 
 Delivery is a queued job (`SendMarketplaceCallback`, needs `php artisan queue:work`). A 2xx is success. 5xx, 429,
@@ -210,14 +227,144 @@ declines a dispute through the API; a person does that in the Paystack dashboard
 - `charge.dispute.resolve`: the dispute becomes `resolved` with `resolution` `won`, `lost` or `other` (Paystack's raw text is kept in
   `paystack_resolution`) and `ticket.dispute_resolved` is queued.
   - **won** returns a `disputed` ticket to its resting status (`paid`, `partially_refunded` or `refunded`, from `refunded_cents`).
-  - **lost** sets `chargeback`.
+  - **lost** sets `chargeback` and opens a host debt (see "Chargeback recovery").
   - **other** (anything not recognised) keeps the ticket `disputed`, so it still cannot be refunded, and is held for an operator
     (`dispute_outcome_unknown`). This is a deliberate departure from "resolved means unblocked", to avoid guessing on money.
 - The mapping `declined` -> won and `merchant-accepted` -> lost comes from Paystack's documentation and has **not been checked against a
   real dispute**. A refund that was already in flight when a dispute opened is still counted when it arrives, without changing the status.
 - A resolve for a dispute we never saw opened is recorded as already resolved. A dispute on an already refunded ticket is recorded and
   reported but leaves the status `refunded` until it is resolved.
-- Evidence deadlines, the money Paystack debits for a lost dispute and any dispute fee are not tracked.
+- Evidence deadlines, the money Paystack actually debits for a lost dispute and any dispute fee are not tracked. The host debt is
+  worked out from the ticket (see below), not from what Paystack debited.
+
+## Chargeback recovery (host agreement and host debts)
+
+Decided by the owner: a host accepts a term first; until a debt is cleared, up to 50% of the **host's share** of each new ticket goes to
+InfoDot as a larger fee on that ticket; nothing is taken without the accepted term; a moderator can write a debt off. The wording of the
+term is a DRAFT for the owner's adviser: [host-agreement-draft.md](host-agreement-draft.md). Like the rest of this feature it does nothing
+unless `BILLING_MARKETPLACE_ENABLED=true`.
+
+### The agreement
+
+`POST /api/payout-accounts/{id}/agreement` with `{version, accepted_by_ref}` (`version` up to 32 letters, digits, `. _ -`;
+`accepted_by_ref` is InfoDot's reference for the person who accepted, up to 64). Same signed InfoDot-only call as every other endpoint.
+Stored as `host_agreements` `(payout_account_id, version, accepted_at, accepted_by_ref)`, unique per account and version.
+
+- `201` the first time, `200` for a repeat of the same version. **The first acceptance stands**: a repeat changes nothing, even with a different
+  `accepted_by_ref`, and writes no second audit entry.
+- The answer is `{payout_account_id, version, accepted_at, accepted_by_ref, current_version, current}`. Accepting an older version is recorded
+  (`current: false`) but does not count.
+- `404 not_found` for an unknown account; the standard `422` for bad input.
+- **While the marketplace is on, a ticket cannot be created for an account that has no acceptance of `billing.marketplace.agreement_version`:**
+  `422 agreement_required`. Changing the configured version therefore asks every host to accept again. A ticket that already exists is still
+  answered by the idempotent repeat.
+
+### When a debt is opened, and for how much
+
+A Paystack dispute resolved **lost** (the existing `charge.dispute.resolve` path, ticket status `chargeback`) opens one `host_debts` row for
+that ticket, in the same transaction, once (`ticket_payment_id` is unique, so a replay or a second dispute on the ticket opens nothing more).
+A **won** or unclassified (`other`) dispute opens nothing.
+
+    debt = ticket amount - platform fee - what was already refunded to the attendee        (never below 0)
+
+Why: the attendee's bank takes the chargeback back from InfoDot's Paystack account. The host was paid their share through the split and InfoDot kept
+only the platform fee, so what InfoDot lost is the host share. A refund already returned part of the money to the attendee, so that part is not at stake
+twice. Paystack's own processing fee and any dispute fee are not counted (the host bore the former; the latter is not tracked). If the result is 0
+(for example a fully refunded ticket) no debt is opened and `host_debt.not_opened` is audited. The debt is taken whether or not the host has accepted the
+term, because it is a fact about money lost; **recovery** needs the term.
+
+The extra fee taken from the lost ticket itself for an *earlier* debt is **not** subtracted: the chargeback takes that money back too, so it is part of
+this loss. The earlier debt stays cleared.
+
+### The extra fee on a new ticket
+
+When a ticket is created for a host with an accepted current term and open debt in the ticket's currency:
+
+    host share      = amount - platform fee
+    cap             = floor(host share x recovery_cap_percent / 100)
+    still owed      = sum of (amount - recovered) over the host's open debts
+                      - recovery already promised on the host's unpaid (pending) tickets
+    extra fee       = min(still owed, cap)
+    transaction_charge sent to Paystack = platform fee + extra fee   (one flat integer)
+
+The extra fee is stored as `ticket_payments.recovery_cents` and returned by `GET /api/seminar-tickets/{ticket_ref}`. Because the cap is at most 100% of the
+host share, the total charge never exceeds the ticket amount; the default 50% leaves the host at least half their share before Paystack's fee.
+The debt rows are read `FOR UPDATE` inside the transaction that creates the ticket, and unpaid tickets' promised recovery is subtracted, so two tickets
+created at the same moment cannot together promise more than is owed. (That lock is held while the Paystack initialise call runs; it only exists for a
+host that has open debt.)
+
+**Worked example.** A R200.00 ticket, 10% platform fee, host owes R100.00, cap 50%:
+
+| | Cents | Rand |
+|---|---:|---:|
+| Attendee pays | 20000 | R200.00 |
+| Platform fee (10%) | 2000 | R20.00 |
+| Host share before recovery | 18000 | R180.00 |
+| Cap (50% of host share) | 9000 | R90.00 |
+| Host owes | 10000 | R100.00 |
+| Extra fee = min(owed, cap) | 9000 | R90.00 |
+| `transaction_charge` sent to Paystack = 2000 + 9000 | 11000 | R110.00 |
+| InfoDot receives on this ticket | 11000 | R110.00 |
+| Host receives (before Paystack's fee) | 9000 | R90.00 |
+| Debt after the ticket is paid | 1000 | R10.00 still owed |
+
+A ticket smaller than the debt: a R50.00 ticket against a R1,000 debt has platform fee R5.00, host share R45.00, extra fee R22.50. Rounding: the cap is
+rounded down (a host share of R9.03 gives a cap of 451 cents, not 452).
+
+### Credited only when the ticket is verified paid
+
+In the same transaction that marks a ticket `paid` (after Paystack's verify), its `recovery_cents` is credited to the host's open debts, oldest first,
+never above what each still owes, and each credit is a `host_debt_recoveries` row unique per (debt, ticket). A webhook replay returns `replayed` before it
+gets there, so it is credited once. A debt reaching zero remaining becomes `cleared` and InfoDot gets `host_debt.cleared`.
+
+If the debt shrank after the ticket was priced (a moderator wrote it off while the ticket was unpaid), the larger fee was already taken by Paystack and
+there is nothing left to credit it to: the amount is audited as `host_debt.recovery_unapplied` and logged as a warning, and **a person must decide**
+whether to credit it back to the host. It is not guessed at.
+
+### Cancelled, failed and refunded tickets
+
+- A ticket that is **cancelled or failed** was never credited, so the debt is unchanged, and it stops counting as "promised" immediately (only
+  `pending` tickets reserve debt). Its `recovery_cents` stays on the row as history.
+- A **refund** gives recovery back in proportion to the refunded share: total given back = credited x refunded / ticket amount, rounded down, and all of
+  it once the ticket is fully refunded. Several partial refunds therefore never give back more than was credited. A cleared debt that falls below its amount
+  is `open` again (`host_debt.reopened`); a written-off debt is left as it is. A refund on a ticket that carried no recovery touches no debt.
+- A ticket that is later lost to a chargeback keeps whatever recovery was credited (see above).
+
+### Write-off and listing
+
+- `GET /api/payout-accounts/{id}/debts` returns `{payout_account_id, agreement: {current_version, accepted}, open_remaining_cents,
+  in_flight_recovery_cents, debts: [{id, ticket_ref, currency, amount_cents, recovered_cents, remaining_cents, written_off_cents, status, opened_at,
+  cleared_at, written_off_at, written_off_by_ref, note}]}`. `remaining_cents` is 0 unless the debt is `open`. `404` for an unknown account.
+- `POST /api/host-debts/{id}/write-off` with `{note (up to 500), written_off_by_ref (up to 64)}`: the moderator's action, started by InfoDot, which
+  records who. Only an `open` debt (`409 debt_not_open` otherwise); a repeat on a written-off debt answers `200` unchanged and sends no second event.
+  Nothing more is taken for it afterwards. `host_debt.written_off` goes to InfoDot.
+
+All four `host_debt.*` events use the signed callback described above.
+
+### Unverified Paystack behaviour (do one small live test first)
+
+None of the following has been checked against Paystack, and the code does not try to decide it:
+
+- That a flat `transaction_charge` larger than the platform fee is accepted on a split transaction, and that it all settles to InfoDot's main account.
+- That, with `bearer: subaccount`, Paystack's processing fee is still taken from the host's remaining share when the host's share is reduced by the extra fee.
+  (At the default 50% cap there is room; a cap near 100% could leave too little, and what Paystack does then is unknown.)
+- How a refund is split between host and InfoDot (already flagged above). The proportional reversal assumes InfoDot returns its extra fee pro rata on a
+  refund; if Paystack takes refunds only from the host, the reversal credits the host back money InfoDot did not return.
+- How much Paystack actually debits for a lost dispute (the transaction amount, less or more, plus a dispute fee) and from which balance. The debt is
+  computed from the ticket, so it can differ from the real debit.
+- The `merchant-accepted` to lost mapping (already flagged above).
+
+### What is NOT handled
+
+- **Legal basis.** The term is an unreviewed draft. Recovery takes money from a host's ticket sales under it; do not enable it with real money until the
+  owner's adviser has reviewed and approved the wording, including POPIA, consumer-protection and any required notice period.
+- **Notifying the host.** Billing does not tell a host about a debt or a larger fee; InfoDot should, through the events above.
+- **Expiring unpaid tickets.** An unpaid ticket's promised recovery stays reserved until the ticket is paid or cancelled, because unpaid tickets never expire
+  (see above). An abandoned ticket therefore blocks recovery of that amount until someone cancels it.
+- **Debts in a different currency** from the ticket are never used (only ZAR is enabled today).
+- **Hosts who never sell again** are never recovered from; the debt stays open until a moderator writes it off.
+- **Interest, fees and collection** outside the larger fee on later tickets.
+- Moving a debt between payout accounts if a host is re-registered under a new `host_ref`.
 
 ## Configuration
 
@@ -232,6 +379,8 @@ declines a dispute through the API; a person does that in the Paystack dashboard
 | `BILLING_MARKETPLACE_CALLBACK_URL` | `callback_url` | blank | InfoDot's receiver, https |
 | `BILLING_MARKETPLACE_CALLBACK_SECRET` | `callback_secret` | blank | Signs callbacks to InfoDot |
 | `BILLING_MARKETPLACE_RETURN_HOSTS` | `return_hosts` | blank | Hosts a `return_url` may use. Blank rejects every `return_url` |
+| `BILLING_MARKETPLACE_AGREEMENT_VERSION` | `agreement_version` | `v1` | The host-term version that counts as current (1 to 32 letters, digits, `. _ -`). Anything else makes the endpoints answer `503 marketplace_misconfigured`. Change it when the wording changes: every host must accept again |
+| `BILLING_MARKETPLACE_RECOVERY_CAP_PERCENT` | `recovery_cap_percent` | `50` | Most of the **host's share** of one ticket taken to recover a lost chargeback, a whole number 0 to 100 (0 = recovery off). Anything else makes the endpoints answer `503 marketplace_misconfigured` |
 | `PAYSTACK_SECRET_KEY` and friends | `paystack.*` | | The existing Paystack settings, including the test-mode guard (a live key needs `PAYSTACK_ALLOW_LIVE=true` too) |
 
 The two bounds are engineering defaults, not owner decisions. Changing `platform_percent` later does not change
@@ -241,7 +390,7 @@ tickets already created (their fee is stored), and existing subaccounts keep the
 ## Audit trail
 
 `payout_account.created`, `payout_account.updated`, `ticket.created`, `ticket.paid`, `ticket.refund_requested`,
-`ticket.refunded` (one per processed refund), `ticket.refund_failed`, `ticket.cancelled`, `ticket.disputed`, `ticket.dispute_resolved` and `ticket.held` are written to `billing_audit_events` with no team (the
+`ticket.refunded` (one per processed refund), `ticket.refund_failed`, `ticket.cancelled`, `ticket.disputed`, `ticket.dispute_resolved`, `ticket.held`, `host_agreement.accepted`, `host_debt.opened`, `host_debt.not_opened`, `host_debt.recovered`, `host_debt.cleared`, `host_debt.recovery_reversed`, `host_debt.recovery_unapplied` and `host_debt.written_off` are written to `billing_audit_events` with no team (the
 `team_id` column became nullable for this). Metadata never contains an account number, a subaccount code or a key.
 
 ## What is NOT handled
@@ -253,6 +402,7 @@ tickets already created (their fee is stored), and existing subaccounts keep the
 - **Payout timing.** Paystack controls when the host and InfoDot are settled; Billing does not track settlements.
 - How Paystack splits a refund between the host and InfoDot (see the refund section: not verified).
 - Whether the refunded amount in a `refund.processed` webhook is in cents: assumed, and a wrong guess shows up as refunds held for an operator.
+- Chargeback recovery has its own list above.
 - Disabling or re-enabling a payout account through the API, expiring an unpaid ticket automatically (a host cancels
   it), and a command to re-send callbacks that failed for good.
 
@@ -263,3 +413,6 @@ tickets already created (their fee is stored), and existing subaccounts keep the
 2. **Who is the merchant of record** for a ticket: the host, or InfoDot as the marketplace. This drives refunds,
    disputes, receipts and who is liable if the host does not deliver.
 3. **VAT**: whether the platform fee carries VAT, whether hosts must show VAT on tickets, and who issues the document.
+4. **Recovery details I chose, which the owner must confirm.** The debt is the host share still outstanding (price minus platform fee minus
+   refunds); a refund gives recovery back pro rata; recovery needs the host to have accepted the *current* version; the cap is a percent of the host
+   share, default 50; a host who stops selling is never chased. And the wording of the term itself, which needs the owner's adviser.

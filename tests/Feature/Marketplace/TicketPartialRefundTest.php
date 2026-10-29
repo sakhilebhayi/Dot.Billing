@@ -246,7 +246,7 @@ class TicketPartialRefundTest extends TestCase
         ]);
 
         $this->signed('GET', "/api/seminar-tickets/{$ticket->ticket_ref}")->assertOk()->assertExactJson([
-            'ticket_ref' => $ticket->ticket_ref, 'status' => 'partially_refunded', 'amount_cents' => 20000, 'platform_fee_cents' => 2000,
+            'ticket_ref' => $ticket->ticket_ref, 'status' => 'partially_refunded', 'amount_cents' => 20000, 'platform_fee_cents' => 2000, 'recovery_cents' => 0,
             'currency' => 'ZAR', 'refunded_cents' => 5000, 'dispute_status' => null, 'paid_at' => $ticket->paid_at->toIso8601String(),
             'refunded_at' => '2026-11-05T09:00:00+00:00',
         ]);

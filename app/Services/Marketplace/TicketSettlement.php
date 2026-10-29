@@ -3,6 +3,7 @@
 namespace App\Services\Marketplace;
 
 use App\Exceptions\Payments\PaymentGatewayException;
+use App\Models\HostDebt;
 use App\Models\PaymentEvent;
 use App\Models\TicketDispute;
 use App\Models\TicketPayment;
@@ -38,6 +39,7 @@ class TicketSettlement
         private MarketplaceCallbackClient $callbacks,
         private MarketplaceConfig $config,
         private AuditLog $audit,
+        private HostDebts $debts,
     ) {}
 
     /** The ticket a Paystack reference belongs to; always null while the marketplace is off. */
@@ -57,8 +59,9 @@ class TicketSettlement
         }
 
         $paid = null;
+        $debtEvents = [];
 
-        $outcome = DB::transaction(function () use ($ticket, $tx, &$paid) {
+        $outcome = DB::transaction(function () use ($ticket, $tx, &$paid, &$debtEvents) {
             $locked = TicketPayment::lockForUpdate()->findOrFail($ticket->id);
 
             $mismatch = match (true) {
@@ -98,8 +101,13 @@ class TicketSettlement
                 'transaction_id' => $tx->id,
                 'amount_cents' => $locked->amount_cents,
                 'platform_fee_cents' => $locked->platform_fee_cents,
+                'recovery_cents' => $locked->recovery_cents,
                 'currency' => $locked->currency,
             ]);
+
+            // The ticket's larger fee (if it carried one) is credited to the host's debt now, in this same
+            // transaction, and only here: a replay returned 'replayed' above and never reaches this line.
+            $debtEvents = $this->debts->applyToPaidTicket($locked);
 
             $paid = $locked;
 
@@ -108,6 +116,7 @@ class TicketSettlement
 
         if ($paid !== null) {
             $this->callbacks->ticketPaid($paid);
+            $this->tellInfoDot($debtEvents);
         }
 
         return $outcome;
@@ -126,8 +135,9 @@ class TicketSettlement
     public function settleRefund(TicketPayment $ticket, array $ids, string $key, int $amountCents, string $currency, ?string $providerStatus, array $payload): string
     {
         $applied = null;
+        $debtEvents = [];
 
-        $outcome = DB::transaction(function () use ($ticket, $ids, $key, $amountCents, $currency, $providerStatus, $payload, &$applied) {
+        $outcome = DB::transaction(function () use ($ticket, $ids, $key, $amountCents, $currency, $providerStatus, $payload, &$applied, &$debtEvents) {
             $locked = TicketPayment::lockForUpdate()->findOrFail($ticket->id);
             $row = $this->matchRefund($locked, $ids, $amountCents);
 
@@ -183,6 +193,9 @@ class TicketSettlement
                 'status' => $locked->status,
             ]);
 
+            // A refund gives back its share of any recovery that was credited to the host's debt.
+            $debtEvents = $this->debts->reverseForRefund($locked);
+
             $applied = [$locked, $row];
 
             return 'applied';
@@ -190,6 +203,7 @@ class TicketSettlement
 
         if ($applied !== null) {
             $this->callbacks->ticketRefunded(...$applied);
+            $this->tellInfoDot($debtEvents);
         }
 
         return $outcome;
@@ -288,8 +302,9 @@ class TicketSettlement
     public function settleDisputeResolved(TicketPayment $ticket, string $disputeId, array $data): string
     {
         $resolved = null;
+        $debtEvents = [];
 
-        $outcome = DB::transaction(function () use ($ticket, $disputeId, $data, &$resolved) {
+        $outcome = DB::transaction(function () use ($ticket, $disputeId, $data, &$resolved, &$debtEvents) {
             $locked = TicketPayment::lockForUpdate()->findOrFail($ticket->id);
             $dispute = $locked->disputes()->where('paystack_dispute_id', $disputeId)->first();
 
@@ -319,6 +334,8 @@ class TicketSettlement
 
             if ($result === TicketDispute::LOST) {
                 $locked->forceFill(['status' => TicketPayment::CHARGEBACK])->save();
+                // InfoDot lost the host's share: record it as a debt, once per ticket (nothing for won or other).
+                $debtEvents = $this->debts->openForLostDispute($locked);
             } elseif ($result === TicketDispute::WON && $locked->status === TicketPayment::DISPUTED) {
                 $locked->forceFill(['status' => $locked->restingStatus()])->save();
             }
@@ -342,9 +359,20 @@ class TicketSettlement
 
         if ($resolved !== null) {
             $this->callbacks->ticketDisputeResolved(...$resolved);
+            $this->tellInfoDot($debtEvents);
         }
 
         return $outcome;
+    }
+
+    /**
+     * @param  list<array{0: string, 1: HostDebt}>  $events
+     */
+    private function tellInfoDot(array $events): void
+    {
+        foreach ($events as [$event, $debt]) {
+            $this->callbacks->hostDebt($event, $debt);
+        }
     }
 
     /**

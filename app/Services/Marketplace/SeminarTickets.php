@@ -33,6 +33,7 @@ class SeminarTickets
         private PaystackClient $client,
         private MarketplaceConfig $config,
         private AuditLog $audit,
+        private HostDebts $debts,
     ) {}
 
     public function find(string $ticketRef): ?TicketPayment
@@ -62,14 +63,27 @@ class SeminarTickets
             throw MarketplaceException::because('payout_account_unavailable', 'That payout account does not exist or is not active.', 422);
         }
 
+        // Nothing is sold for a host who has not accepted the CURRENT version of the term (and so nothing can ever be
+        // taken from them without it). InfoDot shows the host the term and records the acceptance first.
+        if (! $this->debts->hasCurrentAgreement($account)) {
+            throw MarketplaceException::because('agreement_required', 'The host has not accepted the current host agreement.', 422);
+        }
+
         try {
             $ticket = DB::transaction(function () use ($input, $account) {
+                $platformFee = $this->config->platformFeeCents($input['amount_cents']);
+
+                // The extra fee that recovers a lost chargeback. Computed here, inside the transaction, because it
+                // locks the host's open debt rows: tickets created together cannot reserve the same debt twice.
+                $recovery = $this->debts->quote($account, $input['amount_cents'], $platformFee, $input['currency']);
+
                 $ticket = TicketPayment::create([
                     'ticket_ref' => $input['ticket_ref'],
                     'payout_account_id' => $account->id,
                     'buyer_email' => $input['buyer_email'],
                     'amount_cents' => $input['amount_cents'],
-                    'platform_fee_cents' => $this->config->platformFeeCents($input['amount_cents']),
+                    'platform_fee_cents' => $platformFee,
+                    'recovery_cents' => $recovery,
                     'currency' => $input['currency'],
                     'description' => $input['description'],
                     'return_url' => $input['return_url'],
@@ -87,6 +101,7 @@ class SeminarTickets
                     'reference' => $ticket->paystack_reference,
                     'amount_cents' => $ticket->amount_cents,
                     'platform_fee_cents' => $ticket->platform_fee_cents,
+                    'recovery_cents' => $ticket->recovery_cents,
                     'currency' => $ticket->currency,
                 ]);
 

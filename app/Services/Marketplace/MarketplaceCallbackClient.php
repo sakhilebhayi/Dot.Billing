@@ -3,6 +3,7 @@
 namespace App\Services\Marketplace;
 
 use App\Jobs\SendMarketplaceCallback;
+use App\Models\HostDebt;
 use App\Models\TicketDispute;
 use App\Models\TicketPayment;
 use App\Models\TicketRefund;
@@ -89,6 +90,42 @@ class MarketplaceCallbackClient
     }
 
     /**
+     * Tell InfoDot about a host debt: host_debt.opened (a lost chargeback), host_debt.cleared (fully recovered),
+     * host_debt.reopened (a refund gave recovery back to a cleared debt) or host_debt.written_off (a moderator gave up
+     * the rest). ticket_ref is the ticket whose chargeback made the debt, and is unique per debt.
+     */
+    public function hostDebt(string $event, HostDebt $debt): void
+    {
+        $debt->loadMissing(['ticket', 'payoutAccount']);
+
+        $payload = [
+            'event' => $event,
+            'ticket_ref' => $debt->ticket->ticket_ref,
+            'debt_id' => $debt->id,
+            'payout_account_id' => $debt->payout_account_id,
+            'host_ref' => $debt->payoutAccount->host_ref,
+            'currency' => $debt->currency,
+            'amount_cents' => $debt->amount_cents,
+            'recovered_cents' => $debt->recovered_cents,
+            'remaining_cents' => $debt->remainingCents(),
+        ];
+
+        $payload += match ($event) {
+            HostDebts::OPENED => ['opened_at' => $debt->created_at?->toIso8601String()],
+            HostDebts::CLEARED => ['cleared_at' => $debt->cleared_at?->toIso8601String()],
+            HostDebts::REOPENED => ['reopened_at' => now()->toIso8601String()],
+            default => [
+                'written_off_at' => $debt->written_off_at?->toIso8601String(),
+                'written_off_cents' => max(0, $debt->amount_cents - $debt->recovered_cents),
+                'written_off_by_ref' => $debt->written_off_by_ref,
+                'note' => $debt->note,
+            ],
+        };
+
+        $this->queue($payload);
+    }
+
+    /**
      * @param  array<string, mixed>  $payload
      */
     private function queue(array $payload): void
@@ -108,14 +145,14 @@ class MarketplaceCallbackClient
 
     /**
      * "{event}:{ticket_ref}", plus what tells apart events that can repeat for one ticket: a partial refund's
-     * refund_key, a dispute's opened_at or resolved_at.
+     * refund_key, a dispute's opened_at or resolved_at, a host debt's opened_at, cleared_at, reopened_at or written_off_at.
      *
      * @param  array<string, mixed>  $payload
      */
     private function idempotencyKey(array $payload): string
     {
         $parts = [$payload['event'] ?? '', $payload['ticket_ref'] ?? ''];
-        $extra = $payload['refund_key'] ?? $payload['opened_at'] ?? $payload['resolved_at'] ?? null;
+        $extra = $payload['refund_key'] ?? $payload['cleared_at'] ?? $payload['reopened_at'] ?? $payload['written_off_at'] ?? $payload['opened_at'] ?? $payload['resolved_at'] ?? null;
 
         return implode(':', $extra === null ? $parts : [...$parts, $extra]);
     }

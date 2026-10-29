@@ -6,6 +6,8 @@ use App\Models\BillingAuditEvent;
 use App\Models\BillingInvoice;
 use App\Models\BillingPayment;
 use App\Models\BillingSubscription;
+use App\Models\HostAgreement;
+use App\Models\HostDebt;
 use App\Models\PayoutAccount;
 use App\Models\Team;
 use App\Models\TicketPayment;
@@ -40,6 +42,8 @@ class AuditLog
             $subject instanceof BillingPayment => 'payment',
             $subject instanceof PayoutAccount => 'payout_account',
             $subject instanceof TicketPayment => 'ticket_payment',
+            $subject instanceof HostDebt => 'host_debt',
+            $subject instanceof HostAgreement => 'host_agreement',
             default => strtolower(class_basename($subject)),
         };
     }

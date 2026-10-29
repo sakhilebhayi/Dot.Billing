@@ -417,7 +417,7 @@ class SeminarTicketCreateTest extends TestCase
         $this->signed('POST', '/api/seminar-tickets', $this->body())->assertCreated();
 
         $this->signed('GET', '/api/seminar-tickets/tkt-0001')->assertOk()->assertExactJson([
-            'ticket_ref' => 'tkt-0001', 'status' => 'pending', 'amount_cents' => 20000, 'platform_fee_cents' => 2000,
+            'ticket_ref' => 'tkt-0001', 'status' => 'pending', 'amount_cents' => 20000, 'platform_fee_cents' => 2000, 'recovery_cents' => 0,
             'currency' => 'ZAR', 'refunded_cents' => 0, 'dispute_status' => null, 'paid_at' => null, 'refunded_at' => null,
         ]);
 

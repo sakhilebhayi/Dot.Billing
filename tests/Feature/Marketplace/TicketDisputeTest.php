@@ -207,7 +207,8 @@ class TicketDisputeTest extends TestCase
         $this->resolve('declined')->assertOk()->assertJson(['status' => 'replayed']);
 
         $this->assertSame('chargeback', $this->ticket->fresh()->status);
-        Queue::assertPushed(SendMarketplaceCallback::class, 2);
+        // ticket.disputed, ticket.dispute_resolved and, for the lost dispute, host_debt.opened: each exactly once.
+        Queue::assertPushed(SendMarketplaceCallback::class, 3);
     }
 
     public function test_a_resolve_for_a_dispute_never_seen_opened_is_recorded_resolved(): void

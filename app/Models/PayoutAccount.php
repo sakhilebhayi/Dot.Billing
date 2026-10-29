@@ -29,6 +29,16 @@ class PayoutAccount extends Model
         return $this->hasMany(TicketPayment::class);
     }
 
+    public function agreements(): HasMany
+    {
+        return $this->hasMany(HostAgreement::class);
+    }
+
+    public function debts(): HasMany
+    {
+        return $this->hasMany(HostDebt::class);
+    }
+
     public function isActive(): bool
     {
         return $this->status === self::ACTIVE;
